@@ -9,24 +9,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Eye, EyeOff, ArrowRight, Code2, Users, Award } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { authClient } from "@/lib/auth-client"
+import { toast } from "react-toastify"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams();
+  const callbackURL = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      await login(email, password)
-      router.push("/dashboard")
+      const {data, error} = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL
+      });
+      if (error) {
+        toast.error(error.message);
+      }
     } catch (error) {
       console.error("Login failed:", error)
     } finally {

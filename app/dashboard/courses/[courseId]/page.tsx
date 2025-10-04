@@ -9,7 +9,7 @@ import Link from "next/link"
 import { useAuth } from "@/components/auth-provider"
 import { mockCourses, getCourseAssignments, getAssignmentSubmissions } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 export default function CoursePage() {
   const { user } = useAuth()

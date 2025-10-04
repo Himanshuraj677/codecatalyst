@@ -31,7 +31,7 @@ import { useAuth } from "@/components/auth-provider"
 import { getUserCourses, mockProblems } from "@/lib/mock-data"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 export default function CreatePage() {
   const { user } = useAuth()

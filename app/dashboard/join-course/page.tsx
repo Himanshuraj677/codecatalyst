@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { BookOpen, Users, Calendar, UserPlus } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
 import { mockCourses } from "@/lib/mock-data"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 import { useRouter } from "next/navigation"
 
 export default function JoinCoursePage() {

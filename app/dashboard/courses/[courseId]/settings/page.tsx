@@ -12,7 +12,7 @@ import { Settings, Copy, Save, Trash2, Users, AlertTriangle } from "lucide-react
 import { useAuth } from "@/components/auth-provider"
 import { mockCourses } from "@/lib/mock-data"
 import { useParams, useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 export default function CourseSettingsPage() {
   const { user } = useAuth()

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner"
+import { Toaster as Sonner } from "react-toastify"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 

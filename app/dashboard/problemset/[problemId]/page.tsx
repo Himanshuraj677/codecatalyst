@@ -24,7 +24,7 @@ import {
 import { useAuth } from "@/components/auth-provider"
 import { getProblemById, getProblemSubmissions, getUserSubmissions } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 import dynamic from "next/dynamic"
 
 // Dynamically import Monaco Editor to avoid SSR issues

@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { BookOpen, User, GraduationCap, ArrowRight, Users, Award, CheckCircle } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { BookOpen, ArrowRight, Users, Award, CheckCircle } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,19 +25,31 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     role: "student",
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Mock registration
-    setTimeout(() => {
-      setIsLoading(false)
-      console.log("Registration data:", formData)
-    }, 1000)
-  }
+    try {
+      const { data, error } = await authClient.signUp.email({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: "",
+        callbackURL: `${process.env.NEXT_PUBLIC_AUTH_URL}/dashboard`,
+      });
+      if (error) toast.error(error.message);
+      else {
+        toast.success("Signup successfully");
+      }
+    } catch (error) {
+      toast.error("Something unknown occured");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30 flex">
@@ -54,16 +73,29 @@ export default function RegisterPage() {
               Today
             </h1>
             <p className="text-xl text-green-100 mb-8 leading-relaxed">
-              Join our community of learners and educators. Whether you're a student looking to improve your skills or a
-              teacher ready to inspire others.
+              Join our community of learners and educators. Whether you're a
+              student looking to improve your skills or a teacher ready to
+              inspire others.
             </p>
           </div>
 
           <div className="space-y-6">
             {[
-              { icon: CheckCircle, title: "Free to Start", desc: "Begin your journey with our free tier" },
-              { icon: Users, title: "Learn Together", desc: "Join study groups and collaborate" },
-              { icon: Award, title: "Track Progress", desc: "Monitor your improvement over time" },
+              {
+                icon: CheckCircle,
+                title: "Free to Start",
+                desc: "Begin your journey with our free tier",
+              },
+              {
+                icon: Users,
+                title: "Learn Together",
+                desc: "Join study groups and collaborate",
+              },
+              {
+                icon: Award,
+                title: "Track Progress",
+                desc: "Monitor your improvement over time",
+              },
             ].map((feature, index) => (
               <div key={index} className="flex items-center space-x-4">
                 <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -99,26 +131,38 @@ export default function RegisterPage() {
 
           <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-8">
-              <CardTitle className="text-3xl font-bold text-slate-900 mb-2">Create your account</CardTitle>
-              <CardDescription className="text-lg text-slate-600">Join our coding community today</CardDescription>
+              <CardTitle className="text-3xl font-bold text-slate-900 mb-2">
+                Create your account
+              </CardTitle>
+              <CardDescription className="text-lg text-slate-600">
+                Join our coding community today
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="name"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Full Name
                   </Label>
                   <Input
                     id="name"
                     placeholder="Enter your full name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="h-12 border-slate-200 focus:border-green-500 focus:ring-green-500/20 rounded-xl"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Email Address
                   </Label>
                   <Input
@@ -126,13 +170,18 @@ export default function RegisterPage() {
                     type="email"
                     placeholder="Enter your email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="h-12 border-slate-200 focus:border-green-500 focus:ring-green-500/20 rounded-xl"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Password
                   </Label>
                   <Input
@@ -140,13 +189,18 @@ export default function RegisterPage() {
                     type="password"
                     placeholder="Create a password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="h-12 border-slate-200 focus:border-green-500 focus:ring-green-500/20 rounded-xl"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Confirm Password
                   </Label>
                   <Input
@@ -154,33 +208,15 @@ export default function RegisterPage() {
                     type="password"
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                     className="h-12 border-slate-200 focus:border-green-500 focus:ring-green-500/20 rounded-xl"
                     required
                   />
-                </div>
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium text-slate-700">I am a:</Label>
-                  <RadioGroup
-                    value={formData.role}
-                    onValueChange={(value) => setFormData({ ...formData, role: value })}
-                    className="grid grid-cols-2 gap-4"
-                  >
-                    <div className="flex items-center space-x-2 border border-slate-200 rounded-xl p-4 hover:border-green-300 transition-colors">
-                      <RadioGroupItem value="student" id="student" />
-                      <Label htmlFor="student" className="flex items-center space-x-2 cursor-pointer flex-1">
-                        <User className="h-4 w-4 text-blue-600" />
-                        <span>Student</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 border border-slate-200 rounded-xl p-4 hover:border-green-300 transition-colors">
-                      <RadioGroupItem value="teacher" id="teacher" />
-                      <Label htmlFor="teacher" className="flex items-center space-x-2 cursor-pointer flex-1">
-                        <GraduationCap className="h-4 w-4 text-purple-600" />
-                        <span>Teacher</span>
-                      </Label>
-                    </div>
-                  </RadioGroup>
                 </div>
 
                 <Button
@@ -203,8 +239,13 @@ export default function RegisterPage() {
               </form>
 
               <div className="text-center">
-                <span className="text-slate-600">Already have an account? </span>
-                <Link href="/login" className="text-green-600 hover:text-green-700 font-medium">
+                <span className="text-slate-600">
+                  Already have an account?{" "}
+                </span>
+                <Link
+                  href="/login"
+                  className="text-green-600 hover:text-green-700 font-medium"
+                >
                   Sign in
                 </Link>
               </div>
@@ -213,5 +254,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

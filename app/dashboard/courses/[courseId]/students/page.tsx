@@ -20,7 +20,7 @@ import { Users, UserPlus, Mail, Search, MoreHorizontal, Trash2, Send } from "luc
 import { useAuth } from "@/components/auth-provider"
 import { mockCourses } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Mock enrolled students
