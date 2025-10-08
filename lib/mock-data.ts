@@ -88,7 +88,7 @@ export const currentUser: User = {
 export const mockUsers: User[] = [
   currentUser,
   {
-    id: "t1",
+    id: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     name: "Prof. Sharma",
     email: "sharma@college.edu",
     role: "teacher",
@@ -111,7 +111,7 @@ export const mockCourses: Course[] = [
     name: "Data Structures & Algorithms",
     description: "Comprehensive course covering fundamental data structures and algorithmic problem solving.",
     instructor: "Prof. Sharma",
-    instructorId: "t1",
+    instructorId: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     studentCount: 45,
     joinCode: "DSA2024",
     createdAt: "2024-01-15",
@@ -131,7 +131,7 @@ export const mockCourses: Course[] = [
     name: "Database Systems",
     description: "Database design, SQL, and database management systems.",
     instructor: "Prof. Sharma",
-    instructorId: "t1",
+    instructorId: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     studentCount: 32,
     joinCode: "DB2024",
     createdAt: "2024-02-01",
@@ -162,7 +162,7 @@ export const mockProblems: Problem[] = [
       { id: "tc2", input: "[3,2,4]\n6", expectedOutput: "[1,2]", isHidden: true },
     ],
     createdAt: "2024-01-10",
-    createdBy: "t1",
+    createdBy: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     category: "Arrays",
   },
   {
@@ -183,7 +183,7 @@ export const mockProblems: Problem[] = [
       { id: "tc2", input: "()[]{}", expectedOutput: "true", isHidden: true },
     ],
     createdAt: "2024-01-12",
-    createdBy: "t1",
+    createdBy: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     category: "Stack",
   },
   {
@@ -204,7 +204,7 @@ export const mockProblems: Problem[] = [
       { id: "tc2", input: "[]", expectedOutput: "[]", isHidden: true },
     ],
     createdAt: "2024-01-15",
-    createdBy: "t1",
+    createdBy: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     category: "Trees",
   },
   {
@@ -246,7 +246,7 @@ export const mockProblems: Problem[] = [
       { id: "tc2", input: "[]", expectedOutput: "[]", isHidden: true },
     ],
     createdAt: "2024-01-20",
-    createdBy: "t1",
+    createdBy: "Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P",
     category: "Linked Lists",
   },
 ]
@@ -306,7 +306,7 @@ export const mockSubmissions: Submission[] = [
     return []`,
     language: "python",
     status: "Accepted",
-    submittedAt: "2025-07-26T10:30:00Z",
+    submittedAt: "2025-07-26Db8AzaCLRQKLQ8P1Ov9qVKuPITOoDS4P0:30:00Z",
     score: 100,
     feedback: "Excellent implementation! Optimal time complexity.",
     testCasesPassed: 2,
