@@ -22,7 +22,7 @@ import {
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const mockNotifications = [
   {
