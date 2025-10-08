@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Code, Calendar, FileText, User, Eye } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
 import { getUserSubmissions, mockSubmissions } from "@/lib/mock-data"
+import { useUser } from "@/hooks/useUser"
 
 export default function SubmissionsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 

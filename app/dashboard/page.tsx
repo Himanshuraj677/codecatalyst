@@ -15,11 +15,11 @@ import {
   Calendar,
 } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
 import { getUserCourses, getDueAssignments, getUserSubmissions, mockSubmissions } from "@/lib/mock-data"
+import { useUser } from "@/hooks/useUser"
+import { User } from "../context/userContext"
 
-function StudentDashboard() {
-  const { user } = useAuth()
+function StudentDashboard({user}: {user: User}) {
   const courses = getUserCourses(user!.id, "student")
   const dueAssignments = getDueAssignments(user!.id)
   const recentSubmissions = getUserSubmissions(user!.id).slice(0, 3)
@@ -248,9 +248,8 @@ function StudentDashboard() {
   )
 }
 
-function TeacherDashboard() {
-  const { user } = useAuth()
-  const courses = getUserCourses(user!.id, "teacher")
+function TeacherDashboard({user}: {user: User}) {
+  const courses = getUserCourses(user.id, "teacher")
   const allSubmissions = mockSubmissions.slice(0, 5)
   const totalStudents = courses.reduce((sum, course) => sum + course.studentCount, 0)
   const weeklySubmissions = mockSubmissions.length
@@ -451,11 +450,18 @@ function TeacherDashboard() {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-
-  if (user?.role === "teacher") {
-    return <TeacherDashboard />
+  const { user, isLoading } = useUser()
+  if (isLoading) {
+    return (
+      <div className="w-full h-full">
+        <div className="">I am loading</div>
+      </div>
+    );
   }
 
-  return <StudentDashboard />
+  if (user?.role === "teacher") {
+    return <TeacherDashboard user={user} />
+  }
+
+  if (user?.role === "user")return <StudentDashboard user={user}/>
 }

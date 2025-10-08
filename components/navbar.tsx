@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Bell, Search, Settings, User, LogOut, BookOpen, RefreshCw } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { useState } from "react";
+import { Bell, Search, Settings, User, LogOut, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +13,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAuth } from "@/components/auth-provider"
-import Link from "next/link"
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useUser } from "@/hooks/useUser";
+import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { redirect, useRouter } from "next/navigation";
 
 const mockNotifications = [
   {
@@ -40,20 +46,23 @@ const mockNotifications = [
     time: "2 days ago",
     unread: false,
   },
-]
+];
 
 export function Navbar() {
-  const { user, logout, switchRole } = useAuth()
-  const [notifications, setNotifications] = useState(mockNotifications)
-  const unreadCount = notifications.filter((n) => n.unread).length
+  const { user } = useUser();
+  const [notifications, setNotifications] = useState(mockNotifications);
+  const unreadCount = notifications.filter((n) => n.unread).length;
+  const router = useRouter();
 
   const markAsRead = (id: number) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)))
-  }
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
+    );
+  };
 
   const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })))
-  }
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
 
   return (
     <nav className="border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50">
@@ -66,7 +75,10 @@ export function Navbar() {
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input placeholder="Search courses, assignments..." className="pl-10 bg-gray-50 border-0 focus:bg-white" />
+            <Input
+              placeholder="Search courses, assignments..."
+              className="pl-10 bg-gray-50 border-0 focus:bg-white"
+            />
           </div>
         </div>
 
@@ -95,17 +107,27 @@ export function Navbar() {
                   <div
                     key={notification.id}
                     className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      notification.unread ? "bg-blue-50 hover:bg-blue-100" : "hover:bg-gray-50"
+                      notification.unread
+                        ? "bg-blue-50 hover:bg-blue-100"
+                        : "hover:bg-gray-50"
                     }`}
                     onClick={() => markAsRead(notification.id)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className="font-medium text-sm">{notification.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500 mt-2">{notification.time}</p>
+                        <p className="font-medium text-sm">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {notification.time}
+                        </p>
                       </div>
-                      {notification.unread && <div className="w-2 h-2 bg-blue-600 rounded-full mt-1"></div>}
+                      {notification.unread && (
+                        <div className="w-2 h-2 bg-blue-600 rounded-full mt-1"></div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -115,9 +137,15 @@ export function Navbar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                  <AvatarImage
+                    src={user?.avatar || "/placeholder.svg"}
+                    alt={user?.name}
+                  />
                   <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -125,8 +153,12 @@ export function Navbar() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  <p className="text-sm font-medium leading-none">
+                    {user?.name}
+                  </p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-fit mt-1">
                     {user?.role}
                   </span>
@@ -146,11 +178,12 @@ export function Navbar() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={switchRole}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                <span>Switch to {user?.role === "student" ? "Teacher" : "Student"}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={logout}>
+              <DropdownMenuItem
+                onClick={async () => {
+                  await authClient.signOut();
+                  router.push("/login");
+                }}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -159,5 +192,5 @@ export function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }

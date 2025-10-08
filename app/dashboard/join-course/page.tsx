@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { BookOpen, Users, Calendar, UserPlus } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
 import { mockCourses } from "@/lib/mock-data"
 import { toast } from "react-toastify"
 import { useRouter } from "next/navigation"
+import { useUser } from "@/hooks/useUser"
 
 export default function JoinCoursePage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
   const [joinCode, setJoinCode] = useState("")
   const [foundCourse, setFoundCourse] = useState<any>(null)

@@ -27,14 +27,14 @@ import {
   Sparkles,
   Target,
 } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 import { getUserCourses, mockProblems } from "@/lib/mock-data"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { toast } from "react-toastify"
 
 export default function CreatePage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const courses = getUserCourses(user!.id, "teacher")
 
   const [activeTab, setActiveTab] = useState("assignment")

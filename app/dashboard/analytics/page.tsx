@@ -24,11 +24,11 @@ import {
   User,
   Code2,
 } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 import { getUserCourses, mockSubmissions, mockAssignments, mockUsers, getAssignmentProblems } from "@/lib/mock-data"
 
 export default function AnalyticsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const courses = getUserCourses(user!.id, "teacher")
   const [selectedCourse, setSelectedCourse] = useState<string>("all")
   const [selectedAssignment, setSelectedAssignment] = useState<string>("all")

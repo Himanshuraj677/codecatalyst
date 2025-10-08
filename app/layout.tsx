@@ -2,8 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { AuthProvider } from "@/components/auth-provider"
-  import { ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import { UserProvider } from "./context/userContext" 
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -17,13 +17,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
+        <UserProvider>
           {children}
           <ToastContainer />
-        </AuthProvider>
+        </UserProvider>
       </body>
     </html>
   )

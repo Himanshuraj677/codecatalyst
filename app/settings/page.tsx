@@ -11,10 +11,10 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, Bell, Trash2, Eye, EyeOff, AlertTriangle } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [notifications, setNotifications] = useState({

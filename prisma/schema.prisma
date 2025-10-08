@@ -24,10 +24,15 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  role       String?
+  role       Role      @default(user)
   banned     Boolean?  @default(false)
   banReason  String?
   banExpires DateTime?
+
+  courses    Course[]     @relation("TeacherCourses")
+  enrollment Enrollment[]
+  problem    Problem[]
+  submission Submission[]
 
   @@unique([email])
   @@map("user")
@@ -78,4 +83,134 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+enum Role {
+  user
+  teacher
+  moderator
+  admin
+}
+
+enum ProblemDifficulty {
+  Easy
+  Medium
+  Hard
+}
+
+enum SubmissionStatus {
+  Accepted
+  WrongAnswer
+  TimeLimitExceeded
+  RuntimeError
+  Pending
+  CompilationError
+  Plagarized
+}
+
+model Course {
+  id           String   @id @default(cuid())
+  name         String
+  description  String
+  instructorId String
+  instructor   User     @relation("TeacherCourses", fields: [instructorId], references: [id])
+  joinCode     String
+  createdAt    DateTime @default(now())
+
+  enrollments Enrollment[]
+  assignment  Assignment[]
+
+  @@unique([joinCode])
+}
+
+model Enrollment {
+  id        String @id @default(cuid())
+  studentId String
+  courseId  String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    Course @relation(fields: [courseId], references: [id])
+
+  @@unique([courseId, studentId])
+}
+
+model Problem {
+  id                      String              @id @default(cuid())
+  title                   String
+  description             String
+  difficulty              ProblemDifficulty
+  tags                    String[]
+  timeLimit               Int
+  memoryLimit             Int
+  constraints             String[]
+  category                String
+  createdById             String
+  createdAt               DateTime            @default(now())
+  teacherSolution         String
+  teacherSolutionLanguage String
+  createdBy               User                @relation(fields: [createdById], references: [id])
+  assignment              AssignmentProblem[]
+  submission              Submission[]
+  testCases               TestCase[]
+
+  @@index([createdById])
+  @@index([category])
+}
+
+model TestCase {
+  id             String  @id @default(cuid())
+  problemId      String
+  input          String
+  expectedOutput String
+  isHidden       Boolean @default(false)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  courseId    String
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+
+  course      Course              @relation(fields: [courseId], references: [id])
+  problem     AssignmentProblem[]
+  submissions Submission[]
+}
+
+model AssignmentProblem {
+  id           String @id @default(cuid())
+  problemId    String
+  assignmentId String
+
+  problem    Problem    @relation(fields: [problemId], references: [id])
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, assignmentId])
+}
+
+model Submission {
+  id              String           @id @default(cuid())
+  problemId       String
+  assignmentId    String?
+  studentId       String
+  language        String
+  code            String
+  status          SubmissionStatus @default(Pending)
+  score           Int?
+  feedback        String?
+  testCasesPassed Int?
+  totalTestCases  Int?
+  executionTime   Float?
+  memoryUsed      Float?
+  plagiarismScore Float?
+  plagiarizedFrom String?
+  judge0Token     String?
+  judge0Result    Json?
+  submittedAt     DateTime         @default(now())
+
+  student    User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  problem    Problem     @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 }

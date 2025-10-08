@@ -21,11 +21,18 @@ import {
   Filter,
 } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
 import { mockProblems, getProblemSubmissions, getUserSubmissions } from "@/lib/mock-data"
+import { useUser } from "@/hooks/useUser"
 
 export default function ProblemSetPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useUser()
+  if (isLoading) {
+    return (
+      <div className="w-full h-full">
+        <div className="">I am loading</div>
+      </div>
+    );
+  }
   const [searchTerm, setSearchTerm] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")

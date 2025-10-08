@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Home, BookOpen, FileText, Send, Plus, BarChart3, ChevronLeft, ChevronRight, Code2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 
 const studentNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -29,7 +29,7 @@ const teacherNavItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user } = useUser();
 
   const navItems = user?.role === "teacher" ? teacherNavItems : studentNavItems
 

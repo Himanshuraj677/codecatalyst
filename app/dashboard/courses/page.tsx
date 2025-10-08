@@ -4,12 +4,20 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { BookOpen, Users, Calendar, Search, Plus, ArrowRight, GraduationCap } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 import { getUserCourses } from "@/lib/mock-data"
 import { useState } from "react"
 
 export default function CoursesPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useUser();
+  if (isLoading) {
+    return (
+      <div className="w-full h-full">
+        <div className="">I am loading</div>
+      </div>
+    );
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const courses = getUserCourses(user!.id, user!.role)
 

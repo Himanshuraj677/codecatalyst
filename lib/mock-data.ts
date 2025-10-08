@@ -77,7 +77,7 @@ export interface Submission {
 
 // Mock current user - change role to test different views
 export const currentUser: User = {
-  id: "u123",
+  id: "64qrmVAYtpdApEOsPMb65G7A8ROrudJj",
   name: "Himanshu Raj",
   email: "himanshu@example.com",
   role: "student", // Change to "teacher" to test teacher view
@@ -294,7 +294,7 @@ export const mockSubmissions: Submission[] = [
     problemTitle: "Two Sum",
     assignmentId: "a1",
     assignmentTitle: "Basic Data Structures",
-    studentId: "u123",
+    studentId: "64qrmVAYtpdApEOsPMb65G7A8ROrudJj",
     studentName: "Himanshu Raj",
     code: `def twoSum(nums, target):
     hash_map = {}
@@ -320,7 +320,7 @@ export const mockSubmissions: Submission[] = [
     problemTitle: "Valid Parentheses",
     assignmentId: "a1",
     assignmentTitle: "Basic Data Structures",
-    studentId: "u123",
+    studentId: "64qrmVAYtpdApEOsPMb65G7A8ROrudJj",
     studentName: "Himanshu Raj",
     code: `def isValid(s):
     stack = []

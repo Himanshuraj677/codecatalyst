@@ -17,11 +17,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Mail, Edit, Camera, BookOpen, Trophy, Calendar } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
 import { getUserCourses, getUserSubmissions } from "@/lib/mock-data"
+import { useUser } from "@/hooks/useUser"
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     name: user?.name || "",
