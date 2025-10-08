@@ -5,6 +5,7 @@ const statement = {
     problem: ["create", "update", "delete"],
     teacher: ["create", "list", "set-role", "ban", "impersonate", "delete", "set-password", "get", "update"],
     assignment: ["create", "update", "delete"],
+    course: ["create", "update", "delete"],
     ...defaultStatements
 
 } as const; 
@@ -15,6 +16,10 @@ const admin = ac.newRole({
     ...adminAc.statements,
     problem: ["create", "update", "delete"]
 });
+
+const user = ac.newRole({
+    ...userAc.statements
+})
 
 const moderator = ac.newRole({
     problem: ['create', 'delete'],
@@ -30,5 +35,6 @@ const teacher = ac.newRole({
 export const APP_ROLES = {
     admin,
     teacher,
-    moderator
+    moderator,
+    user
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { BookOpen, Eye, Save, Users } from "lucide-react";
 import { Label } from "./ui/label";
@@ -13,17 +15,36 @@ function CreateCourse({ user }: { user: User }) {
     description: "",
     joinCode: "",
   });
-  const handleCourseSubmit = (e: React.FormEvent) => {
+  const handleCourseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating course:", courseForm);
-    toast.success("Course created successfully!");
-
-    // Reset form
-    setCourseForm({
-      name: "",
-      description: "",
-      joinCode: "",
-    });
+    try {
+      console.log("Creating course:", courseForm);
+      const res = await fetch("/api/course", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(courseForm),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data?.message || "Failed to create resource");
+        return;
+      }
+      toast.success("Course created successfully!");
+      setCourseForm({
+        name: "",
+        description: "",
+        joinCode: "",
+      });
+    } catch (error) {
+      let errorMessage = "Unknown error occured";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    }
   };
 
   const generateJoinCode = () => {

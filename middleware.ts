@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "./lib/auth";
 
-const protectedRoute = ["/dashboard", "/profile", "/setting"];
+const protectedRoute = ["/dashboard", "/profile", "/setting", "/api/course"];
 
 export async function middleware (req: NextRequest) {
     const {pathname} = req.nextUrl;
@@ -23,5 +23,5 @@ export async function middleware (req: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*", "/profile/:path*", "/setting/:path*"],
+    matcher: ["/dashboard/:path*", "/profile/:path*", "/setting/:path*", "/api/course/:path"],
 }

@@ -172,6 +172,7 @@ model Assignment {
   description String
   courseId    String
   dueDate     DateTime
+  maxAttempt  Int
   createdAt   DateTime @default(now())
 
   course      Course              @relation(fields: [courseId], references: [id])
