@@ -126,15 +126,29 @@ export default function CourseSettingsPage() {
     }
   };
 
-  const handleDeleteCourse = () => {
+  const handleDeleteCourse = async () => {
     if (
       confirm(
         "Are you sure you want to delete this course? This action cannot be undone."
       )
     ) {
-      console.log("Deleting course:", courseId);
-      toast.success("Course deleted successfully!");
-      router.push("/dashboard/courses");
+      try {
+        const response = await fetch(`/api/courses/${courseId}`, {
+          method: "DELETE",
+          credentials: "include"
+        })
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          toast.error(data?.message || "Unable to delete course");
+          return;
+        }
+        toast.success("Course deleted successfully!");
+        router.push("/dashboard/courses");
+      } catch (error) {
+        let errorMessage = "Something unknown occured";
+        if (error instanceof Error) errorMessage = error.message;
+        toast.error(errorMessage);
+      }
     }
   };
 
