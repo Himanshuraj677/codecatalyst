@@ -1,31 +1,72 @@
-"use client"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { BookOpen, Users, Calendar, Search, Plus, ArrowRight, GraduationCap } from "lucide-react"
-import Link from "next/link"
-import { useUser } from "@/hooks/useUser"
-import { getUserCourses } from "@/lib/mock-data"
-import { useState } from "react"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Search,
+  Plus,
+  ArrowRight,
+  GraduationCap,
+} from "lucide-react";
+import Link from "next/link";
+import { useUser } from "@/hooks/useUser";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function CoursesPage() {
   const { user, isLoading } = useUser();
-  if (isLoading) {
+  const [isFetching, setIsFetching] = useState(false);
+  const [courses, setCourses] = useState<any[]>([]);
+  
+
+  const [searchTerm, setSearchTerm] = useState("");
+  // const courses = getUserCourses(user!.id, user!.role)
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchCourses = async () => {
+      try {
+        setIsFetching(true);
+        const res = await fetch("/api/course", {
+          method: "GET",
+          credentials: "include",
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data?.message || "Unable to fetch courses");
+          return;
+        }
+        setCourses(data.data); // assuming your API returns { success, data }
+      } catch (err) {
+        let errorMessage = "";
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        toast.error(errorMessage);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  const filteredCourses = courses.filter(
+    (course) =>
+      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.instructor.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (isLoading || isFetching) {
     return (
       <div className="w-full h-full">
         <div className="">I am loading</div>
       </div>
     );
   }
-
-  const [searchTerm, setSearchTerm] = useState("")
-  const courses = getUserCourses(user!.id, user!.role)
-
-  const filteredCourses = courses.filter(
-    (course) =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
@@ -56,7 +97,9 @@ export default function CoursesPage() {
                 )}
                 <div className="hidden lg:flex items-center space-x-2 text-slate-600">
                   <BookOpen className="h-5 w-5" />
-                  <span className="font-medium">{filteredCourses.length} courses</span>
+                  <span className="font-medium">
+                    {filteredCourses.length} courses
+                  </span>
                 </div>
               </div>
             </div>
@@ -90,7 +133,10 @@ export default function CoursesPage() {
                         <BookOpen className="h-7 w-7 text-white" />
                       </div>
                       {user?.role === "teacher" && (
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-700 font-mono text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="bg-slate-100 text-slate-700 font-mono text-xs"
+                        >
                           {course.joinCode}
                         </Badge>
                       )}
@@ -98,7 +144,9 @@ export default function CoursesPage() {
                     <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
                       {course.name}
                     </h3>
-                    <p className="text-slate-600 text-sm line-clamp-2 mb-4">{course.description}</p>
+                    <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+                      {course.description}
+                    </p>
                   </div>
                 </div>
 
@@ -112,7 +160,9 @@ export default function CoursesPage() {
                       </div>
                       <div className="flex items-center space-x-2 text-slate-600">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(course.createdAt).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(course.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                     <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
@@ -126,7 +176,9 @@ export default function CoursesPage() {
                       <GraduationCap className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{course.instructor}</p>
+                      <p className="text-sm font-medium text-slate-900">
+                        {course.instructor}
+                      </p>
                       <p className="text-xs text-slate-600">Instructor</p>
                     </div>
                   </div>
@@ -145,13 +197,15 @@ export default function CoursesPage() {
             <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-6">
               <BookOpen className="h-12 w-12 text-slate-400" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-3">No courses found</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">
+              No courses found
+            </h3>
             <p className="text-slate-600 mb-8 max-w-md mx-auto">
               {searchTerm
                 ? "Try adjusting your search terms to find the courses you're looking for."
                 : user?.role === "teacher"
-                  ? "Create your first course to get started with teaching on our platform."
-                  : "You are not enrolled in any courses yet. Join a course to get started!"}
+                ? "Create your first course to get started with teaching on our platform."
+                : "You are not enrolled in any courses yet. Join a course to get started!"}
             </p>
             {user?.role === "teacher" && !searchTerm && (
               <Link href="/dashboard/create">
@@ -173,5 +227,5 @@ export default function CoursesPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

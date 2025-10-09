@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BookOpen, Users, Calendar, Clock, FileText, Plus, Copy, Settings } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
 import { mockCourses, getCourseAssignments, getAssignmentSubmissions } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
 import { toast } from "react-toastify"
+import { useUser } from "@/hooks/useUser"
 
 export default function CoursePage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const params = useParams()
   const courseId = params.courseId as string
 

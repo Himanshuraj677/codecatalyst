@@ -49,3 +49,60 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const checkAccess = await checkRoleBasedAccess({ req });
+    if (!checkAccess.hasAccess || !checkAccess.user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized", message: checkAccess.message },
+        { status: 401 }
+      );
+    }
+    const instructorId = checkAccess.user.id;
+    const courses = await prisma.course.findMany({
+      where: {
+        instructorId,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        createdAt: true,
+        instructor: {
+          select: {
+            name: true,
+          },
+        },
+        _count: {
+          select: { enrollments: true },
+        },
+      },
+    });
+
+    const formattedCourses = courses.map((course) => ({
+      ...course,
+      studentCount: course._count.enrollments,
+      instructor: course.instructor.name,
+      _count: undefined, // remove _count if not needed
+    }));
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: formattedCourses,
+        message: "Fetched successfully",
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Something unknown occured",
+        message: "Unable to fetch course",
+      },
+      { status: 500 }
+    );
+  }
+}
