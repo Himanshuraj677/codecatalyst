@@ -1,54 +1,120 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BookOpen, Users, Calendar, Clock, FileText, Plus, Copy, Settings } from "lucide-react"
-import Link from "next/link"
-import { mockCourses, getCourseAssignments, getAssignmentSubmissions } from "@/lib/mock-data"
-import { useParams } from "next/navigation"
-import { toast } from "react-toastify"
-import { useUser } from "@/hooks/useUser"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Clock,
+  FileText,
+  Plus,
+  Copy,
+  Settings,
+} from "lucide-react";
+import Link from "next/link";
+import {
+  mockCourses,
+  getCourseAssignments,
+  getAssignmentSubmissions,
+} from "@/lib/mock-data";
+import { useParams } from "next/navigation";
+import { toast } from "react-toastify";
+import { useUser } from "@/hooks/useUser";
+import { useEffect, useState } from "react";
 
 export default function CoursePage() {
-  const { user } = useUser()
-  const params = useParams()
-  const courseId = params.courseId as string
+  const { user, isLoading } = useUser();
+  const params = useParams();
+  const courseId = params.courseId as string;
+  const [isFetching, setIsFetching] = useState(true);
+  const [course, setCourse] = useState<any>();
+  const [assignments, setAssignments] = useState<any[]>([]);
 
-  const course = mockCourses.find((c) => c.id === courseId)
-  const assignments = getCourseAssignments(courseId)
+  // const course = mockCourses.find((c) => c.id === courseId)
+  // const assignments = getCourseAssignments(courseId)
+  useEffect(() => {
+    const fetchCourse = async () => {
+      setIsFetching(true);
+      try {
+        const response = await fetch(`/api/courses/${courseId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          toast.error(result.message || "Something unknown occured");
+          return;
+        }
+
+        const data = result.data;
+        setCourse({
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          joinCode: data.joinCode,
+          studentCount: data.studentCount,
+          createdAt: data.createdAt,
+          instructor: data.instructor?.name || "Unknown",
+        });
+        setAssignments(data.assignment);
+      } catch (error) {
+        let errorMessage = "Something unknown occured";
+        if (error instanceof Error) errorMessage = error.message;
+        toast.error(errorMessage);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchCourse();
+  }, []);
+
+  if (isFetching || isLoading) {
+    return <div className="">I am loading</div>;
+  }
 
   if (!course) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Course not found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Course not found
+          </h3>
           <Link href="/dashboard/courses">
             <Button>Back to Courses</Button>
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   const copyJoinCode = () => {
-    navigator.clipboard.writeText(course.joinCode)
-    toast.success("Join code copied to clipboard!")
-  }
+    navigator.clipboard.writeText(course.joinCode);
+    toast.success("Join code copied to clipboard!");
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "Medium":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "Hard":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -65,7 +131,9 @@ export default function CoursePage() {
               </div>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                <span>Created {new Date(course.createdAt).toLocaleDateString()}</span>
+                <span>
+                  Created {new Date(course.createdAt).toLocaleDateString()}
+                </span>
               </div>
               <div className="flex items-center">
                 <BookOpen className="h-4 w-4 mr-2" />
@@ -78,8 +146,15 @@ export default function CoursePage() {
               <>
                 <div className="flex items-center space-x-2 bg-white/20 rounded-lg p-2">
                   <span className="text-sm">Join Code:</span>
-                  <code className="bg-white/30 px-2 py-1 rounded text-sm font-mono">{course.joinCode}</code>
-                  <Button size="sm" variant="ghost" onClick={copyJoinCode} className="text-white hover:bg-white/20">
+                  <code className="bg-white/30 px-2 py-1 rounded text-sm font-mono">
+                    {course.joinCode}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={copyJoinCode}
+                    className="text-white hover:bg-white/20"
+                  >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
@@ -107,7 +182,9 @@ export default function CoursePage() {
         <TabsList>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
-          {user?.role === "teacher" && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
+          {user?.role === "teacher" && (
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="assignments" className="space-y-4">
@@ -125,14 +202,25 @@ export default function CoursePage() {
 
           <div className="grid gap-4">
             {assignments.map((assignment) => (
-              <Card key={assignment.id} className="hover:shadow-md transition-shadow">
+              <Card
+                key={assignment.id}
+                className="hover:shadow-md transition-shadow"
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-xl">{assignment.title}</CardTitle>
-                      <CardDescription className="mt-2">{assignment.description}</CardDescription>
+                      <CardTitle className="text-xl">
+                        {assignment.title}
+                      </CardTitle>
+                      <CardDescription className="mt-2">
+                        {assignment.description}
+                      </CardDescription>
                     </div>
-                    <Badge className={getDifficultyColor(assignment.difficulty)}>{assignment.difficulty}</Badge>
+                    <Badge
+                      className={getDifficultyColor(assignment.difficulty)}
+                    >
+                      {assignment.difficulty}
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -140,7 +228,10 @@ export default function CoursePage() {
                     <div className="flex items-center space-x-6 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
-                        <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
+                        <span>
+                          Due:{" "}
+                          {new Date(assignment.dueDate).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center">
                         <FileText className="h-4 w-4 mr-1" />
@@ -149,12 +240,21 @@ export default function CoursePage() {
                       {user?.role === "teacher" && (
                         <div className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          <span>{getAssignmentSubmissions(assignment.id).length} submissions</span>
+                          <span>
+                            {getAssignmentSubmissions(assignment.id).length}{" "}
+                            submissions
+                          </span>
                         </div>
                       )}
                     </div>
-                    <Link href={`/dashboard/courses/${courseId}/assignments/${assignment.id}`}>
-                      <Button>{user?.role === "teacher" ? "Manage" : "View Assignment"}</Button>
+                    <Link
+                      href={`/dashboard/courses/${courseId}/assignments/${assignment.id}`}
+                    >
+                      <Button>
+                        {user?.role === "teacher"
+                          ? "Manage"
+                          : "View Assignment"}
+                      </Button>
                     </Link>
                   </div>
                 </CardContent>
@@ -165,7 +265,9 @@ export default function CoursePage() {
           {assignments.length === 0 && (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No assignments yet
+              </h3>
               <p className="text-gray-600">
                 {user?.role === "teacher"
                   ? "Create your first assignment to get started"
@@ -179,12 +281,16 @@ export default function CoursePage() {
           <Card>
             <CardHeader>
               <CardTitle>Enrolled Students</CardTitle>
-              <CardDescription>{course.studentCount} students enrolled in this course</CardDescription>
+              <CardDescription>
+                {course.studentCount} students enrolled in this course
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Student list feature coming soon</p>
+                <p className="text-gray-600">
+                  Student list feature coming soon
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -195,12 +301,16 @@ export default function CoursePage() {
             <Card>
               <CardHeader>
                 <CardTitle>Course Analytics</CardTitle>
-                <CardDescription>Track student progress and assignment performance</CardDescription>
+                <CardDescription>
+                  Track student progress and assignment performance
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">
                   <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Analytics dashboard coming soon</p>
+                  <p className="text-gray-600">
+                    Analytics dashboard coming soon
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -208,5 +318,5 @@ export default function CoursePage() {
         )}
       </Tabs>
     </div>
-  )
+  );
 }

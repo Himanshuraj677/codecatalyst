@@ -29,7 +29,7 @@ export default function CoursesPage() {
     const fetchCourses = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch("/api/course", {
+        const res = await fetch("/api/courses", {
           method: "GET",
           credentials: "include",
           signal: controller.signal,

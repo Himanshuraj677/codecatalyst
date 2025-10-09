@@ -9,18 +9,60 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Settings, Copy, Save, Trash2, Users, AlertTriangle } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
 import { mockCourses } from "@/lib/mock-data"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "react-toastify"
+import { useUser } from "@/hooks/useUser"
 
 export default function CourseSettingsPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useUser()
   const params = useParams()
   const router = useRouter()
   const courseId = params.courseId as string
+  const [course, setCourse] = useState();
 
-  const course = mockCourses.find((c) => c.id === courseId)
+  // const course = mockCourses.find((c) => c.id === courseId)
+  useEffect(() => {
+      const fetchCourse = async () => {
+        setIsFetching(true);
+        try {
+          const response = await fetch(`/api/courses/${courseId}`, {
+            method: "GET",
+            credentials: "include",
+          });
+          const result = await response.json();
+  
+          if (!response.ok || !result.success) {
+            toast.error(result.message || "Something unknown occured");
+            return;
+          }
+  
+          const data = result.data;
+          setCourse({
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            joinCode: data.joinCode,
+            studentCount: data.studentCount,
+            createdAt: data.createdAt,
+            instructor: data.instructor?.name || "Unknown",
+          });
+          setAssignments(data.assignment);
+        } catch (error) {
+          let errorMessage = "Something unknown occured";
+          if (error instanceof Error) errorMessage = error.message;
+          toast.error(errorMessage);
+        } finally {
+          setIsFetching(false);
+        }
+      };
+  
+      fetchCourse();
+    }, []);
+  
+    if (isFetching || isLoading) {
+      return <div className="">I am loading</div>;
+    }
 
   const [courseForm, setCourseForm] = useState({
     name: course?.name || "",
@@ -60,6 +102,12 @@ export default function CourseSettingsPage() {
       toast.success("Course deleted successfully!")
       router.push("/dashboard/courses")
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="">I am loading</div>
+    );
   }
 
   return (

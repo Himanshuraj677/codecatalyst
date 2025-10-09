@@ -19,7 +19,7 @@ function CreateCourse({ user }: { user: User }) {
     e.preventDefault();
     try {
       console.log("Creating course:", courseForm);
-      const res = await fetch("/api/course", {
+      const res = await fetch("/api/courses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

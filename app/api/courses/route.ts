@@ -68,6 +68,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         description: true,
+        joinCode: true,
         createdAt: true,
         instructor: {
           select: {
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
       ...course,
       studentCount: course._count.enrollments,
       instructor: course.instructor.name,
-      _count: undefined, // remove _count if not needed
+      _count: undefined, 
     }));
 
     return NextResponse.json(
