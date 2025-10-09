@@ -1,7 +1,7 @@
 import checkRoleBasedAccess from "@/lib/checkRoleAccess";
 import { prisma } from "@/lib/db";
 import { handleApiError } from "@/lib/error-handler";
-import { success } from "better-auth";
+import { courseSchema } from "@/lib/validation";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -67,7 +67,6 @@ export async function GET(
       studentCount: _count.enrollments,
     };
 
-    console.log(formattedCourse);
     return NextResponse.json(
       {
         success: true,
@@ -79,4 +78,43 @@ export async function GET(
   } catch (error) {
     return handleApiError(error);
   }
+}
+
+export async function PUT(req: NextRequest, {params}: {params: {id: string}}) {
+    try {
+        const id = params.id;
+        const body = await req.json();
+        const {name, description, joinCode} = courseSchema.parse(body);
+        const permissions = {
+            course: ["update"]
+        }
+        const checkAccess = await checkRoleBasedAccess({ permissions, req });
+        if (!checkAccess.user) {
+            return NextResponse.json({success: false, message: checkAccess.message}, {status: 401});
+        }
+        if (!checkAccess.hasAccess) {
+            const course = await prisma.course.findUnique({
+                where: {id}
+            })
+            if (!course) {
+                return NextResponse.json({success: false, message: "Course is not found"}, {status: 404})
+            }
+            if (course?.instructorId !== checkAccess.user?.id) {
+                return NextResponse.json({success: false, message: "You don't have permission"}, {status: 403});
+            }
+        }
+        const updatedCourse = await prisma.course.update({
+            where: {id},
+            data: {
+                name,
+                description,
+                joinCode
+            }
+        })
+
+        return NextResponse.json({success: true, message: "Course has been updated successfully", data: updatedCourse});
+
+    } catch (error) {
+        return handleApiError(error);
+    }
 }

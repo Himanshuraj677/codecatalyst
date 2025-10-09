@@ -1,112 +1,156 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Settings, Copy, Save, Trash2, Users, AlertTriangle } from "lucide-react"
-import { mockCourses } from "@/lib/mock-data"
-import { useParams, useRouter } from "next/navigation"
-import { toast } from "react-toastify"
-import { useUser } from "@/hooks/useUser"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Settings,
+  Copy,
+  Save,
+  Trash2,
+  Users,
+  AlertTriangle,
+} from "lucide-react";
+import { mockCourses } from "@/lib/mock-data";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { useUser } from "@/hooks/useUser";
 
 export default function CourseSettingsPage() {
-  const { user, isLoading } = useUser()
-  const params = useParams()
-  const router = useRouter()
-  const courseId = params.courseId as string
-  const [course, setCourse] = useState();
+  const { user, isLoading } = useUser();
+  const params = useParams();
+  const router = useRouter();
+  const courseId = params.courseId as string;
+  const [course, setCourse] = useState<any>();
+  const [isFetching, setIsFetching] = useState(false);
+  const [courseForm, setCourseForm] = useState({
+    name: "",
+    description: "",
+    joinCode: "",
+  });
 
   // const course = mockCourses.find((c) => c.id === courseId)
   useEffect(() => {
-      const fetchCourse = async () => {
-        setIsFetching(true);
-        try {
-          const response = await fetch(`/api/courses/${courseId}`, {
-            method: "GET",
-            credentials: "include",
-          });
-          const result = await response.json();
-  
-          if (!response.ok || !result.success) {
-            toast.error(result.message || "Something unknown occured");
-            return;
-          }
-  
-          const data = result.data;
-          setCourse({
-            id: data.id,
-            name: data.name,
-            description: data.description,
-            joinCode: data.joinCode,
-            studentCount: data.studentCount,
-            createdAt: data.createdAt,
-            instructor: data.instructor?.name || "Unknown",
-          });
-          setAssignments(data.assignment);
-        } catch (error) {
-          let errorMessage = "Something unknown occured";
-          if (error instanceof Error) errorMessage = error.message;
-          toast.error(errorMessage);
-        } finally {
-          setIsFetching(false);
+    const fetchCourse = async () => {
+      setIsFetching(true);
+      try {
+        const response = await fetch(`/api/courses/${courseId}`, {
+          method: "GET",
+          credentials: "include",
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          toast.error(result.message || "Something unknown occured");
+          return;
         }
-      };
-  
-      fetchCourse();
-    }, []);
-  
-    if (isFetching || isLoading) {
-      return <div className="">I am loading</div>;
+
+        const data = result.data;
+        setCourse({
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          joinCode: data.joinCode,
+          studentCount: data.studentCount,
+          createdAt: data.createdAt,
+          instructor: data.instructor?.name || "Unknown",
+        });
+        setCourseForm({
+          name: data.name,
+          description: data.description,
+          joinCode: data.joinCode
+        })
+      } catch (error) {
+        let errorMessage = "Something unknown occured";
+        if (error instanceof Error) errorMessage = error.message;
+        toast.error(errorMessage);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+
+    fetchCourse();
+  }, []);
+
+  const copyJoinCode = () => {
+    navigator.clipboard.writeText(courseForm.joinCode);
+    toast.success("Join code copied to clipboard!");
+  };
+
+  const generateNewJoinCode = () => {
+  // Generate 3 random uppercase letters
+  const letters = Array.from({ length: 3 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26))
+  ).join("");
+
+  // Generate 4 random digits
+  const numbers = Math.floor(1000 + Math.random() * 9000); // ensures 4 digits
+
+  const newCode = `${letters}${numbers}`;
+
+  setCourseForm((prev) => ({ ...prev, joinCode: newCode }));
+  toast.success("New join code generated!");
+};
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`/api/courses/${courseId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(courseForm),
+        credentials: "include"
+      })
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        toast.error(`${result?.message}` || "Unable to update");
+        return;
+      }
+      toast.success("Course has been updated");
+    } catch (error) {
+      let errorMessage = "Something unknown occured";
+      if (error instanceof Error) errorMessage = error.message;
+      toast.error(errorMessage);
     }
+  };
 
-  const [courseForm, setCourseForm] = useState({
-    name: course?.name || "",
-    description: course?.description || "",
-    joinCode: course?.joinCode || "",
-  })
+  const handleDeleteCourse = () => {
+    if (
+      confirm(
+        "Are you sure you want to delete this course? This action cannot be undone."
+      )
+    ) {
+      console.log("Deleting course:", courseId);
+      toast.success("Course deleted successfully!");
+      router.push("/dashboard/courses");
+    }
+  };
 
-  if (!course) {
+  if (isLoading || isFetching) {
+    return <div className="">I am loading</div>;
+  }
+
+  if (!course && !isLoading && !isFetching) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Course not found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Course not found
+          </h3>
         </div>
       </div>
-    )
-  }
-
-  const copyJoinCode = () => {
-    navigator.clipboard.writeText(courseForm.joinCode)
-    toast.success("Join code copied to clipboard!")
-  }
-
-  const generateNewJoinCode = () => {
-    const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
-    setCourseForm({ ...courseForm, joinCode: newCode })
-    toast.success("New join code generated!")
-  }
-
-  const handleSave = () => {
-    console.log("Saving course settings:", courseForm)
-    toast.success("Course settings updated successfully!")
-  }
-
-  const handleDeleteCourse = () => {
-    if (confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
-      console.log("Deleting course:", courseId)
-      toast.success("Course deleted successfully!")
-      router.push("/dashboard/courses")
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="">I am loading</div>
     );
   }
 
@@ -131,7 +175,9 @@ export default function CourseSettingsPage() {
                 <Input
                   id="courseName"
                   value={courseForm.name}
-                  onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setCourseForm({ ...courseForm, name: e.target.value })
+                  }
                 />
               </div>
 
@@ -140,7 +186,12 @@ export default function CourseSettingsPage() {
                 <Textarea
                   id="courseDescription"
                   value={courseForm.description}
-                  onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+                  onChange={(e) =>
+                    setCourseForm({
+                      ...courseForm,
+                      description: e.target.value,
+                    })
+                  }
                   className="min-h-[100px]"
                 />
               </div>
@@ -151,7 +202,9 @@ export default function CourseSettingsPage() {
                   <Input
                     id="joinCode"
                     value={courseForm.joinCode}
-                    onChange={(e) => setCourseForm({ ...courseForm, joinCode: e.target.value })}
+                    onChange={(e) =>
+                      setCourseForm({ ...courseForm, joinCode: e.target.value })
+                    }
                   />
                   <Button variant="outline" onClick={copyJoinCode}>
                     <Copy className="h-4 w-4" />
@@ -160,7 +213,9 @@ export default function CourseSettingsPage() {
                     Generate New
                   </Button>
                 </div>
-                <p className="text-sm text-gray-600">Students use this code to join your course</p>
+                <p className="text-sm text-gray-600">
+                  Students use this code to join your course
+                </p>
               </div>
 
               <Button onClick={handleSave}>
@@ -174,17 +229,24 @@ export default function CourseSettingsPage() {
           <Card className="border-red-200">
             <CardHeader>
               <CardTitle className="text-red-600">Danger Zone</CardTitle>
-              <CardDescription>Irreversible and destructive actions</CardDescription>
+              <CardDescription>
+                Irreversible and destructive actions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Once you delete a course, there is no going back. All assignments, submissions, and student data will
-                  be permanently removed.
+                  Once you delete a course, there is no going back. All
+                  assignments, submissions, and student data will be permanently
+                  removed.
                 </AlertDescription>
               </Alert>
-              <Button variant="destructive" className="mt-4" onClick={handleDeleteCourse}>
+              <Button
+                variant="destructive"
+                className="mt-4"
+                onClick={handleDeleteCourse}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Course
               </Button>
@@ -205,7 +267,9 @@ export default function CourseSettingsPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium">Created</Label>
-                <p className="text-sm text-gray-600">{new Date(course.createdAt).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600">
+                  {new Date(course.createdAt).toLocaleDateString()}
+                </p>
               </div>
               <div>
                 <Label className="text-sm font-medium">Students Enrolled</Label>
@@ -243,5 +307,5 @@ export default function CourseSettingsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
