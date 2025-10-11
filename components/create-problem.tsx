@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Code2, Plus, Save, Eye, X } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -19,38 +19,73 @@ function CreateProblem() {
     title: "",
     description: "",
     difficulty: "",
-    category: "",
+    categoryId: "",
     tags: [] as string[],
     timeLimit: "",
     memoryLimit: "",
-    sampleInput: "",
-    sampleOutput: "",
-    explanation: "",
+    // sampleInput: "",
+    // sampleOutput: "",
     constraints: [] as string[],
   });
 
+  const [categories, setCategories] = useState([] as {id: string, name: string}[]);
   const [newTag, setNewTag] = useState("");
   const [newConstraint, setNewConstraint] = useState("");
 
-  const handleProblemSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Creating problem:", problemForm);
-    toast.success("Problem created successfully!");
+  useEffect(() => {
+    // Fetch categories from the API
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const data = await response.json();
+        if (response.ok && data.success) {
+          setCategories(data.data);
+        } else {
+          console.error("Failed to fetch categories:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
 
-    // Reset form
-    setProblemForm({
-      title: "",
-      description: "",
-      difficulty: "",
-      category: "",
-      tags: [],
-      timeLimit: "",
-      memoryLimit: "",
-      sampleInput: "",
-      sampleOutput: "",
-      explanation: "",
-      constraints: [],
-    });
+    fetchCategories();
+  }, []);
+
+  const handleProblemSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/problems", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(problemForm),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data.message || "Failed to create problem");
+        return;
+      }
+      console.log("Problem created successfully:", data);
+      toast.success("Problem created successfully!");
+      // Reset form
+      setProblemForm({
+        title: "",
+        description: "",
+        difficulty: "",
+        tags: [],
+        timeLimit: "",
+        memoryLimit: "",
+        constraints: [],
+        categoryId: "",
+        // sampleInput: "",
+        // sampleOutput: "",
+      });
+    } catch (error) {
+      console.error("Error creating problem:", error);
+      toast.error("Error creating problem");
+    } 
+
   };
 
   const addTag = () => {
@@ -166,19 +201,24 @@ function CreateProblem() {
                   >
                     Category *
                   </Label>
-                  <Input
-                    id="category"
-                    placeholder="e.g., Arrays"
-                    value={problemForm.category}
-                    onChange={(e) =>
-                      setProblemForm({
-                        ...problemForm,
-                        category: e.target.value,
-                      })
+                  <Select
+                    value={problemForm.categoryId}
+                    onValueChange={(value) =>
+                      setProblemForm({ ...problemForm, categoryId: value })
                     }
-                    className="h-12 border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
                     required
-                  />
+                  >
+                    <SelectTrigger className="h-12 border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-xl">
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id} className="rounded-lg">
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -297,7 +337,7 @@ function CreateProblem() {
                 />
               </div>
 
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 <Label
                   htmlFor="sampleInput"
                   className="text-sm font-semibold text-slate-700"
@@ -339,28 +379,7 @@ function CreateProblem() {
                   }
                   required
                 />
-              </div>
-
-              <div className="space-y-3">
-                <Label
-                  htmlFor="explanation"
-                  className="text-sm font-semibold text-slate-700"
-                >
-                  Explanation
-                </Label>
-                <Textarea
-                  id="explanation"
-                  placeholder="Explain the solution approach..."
-                  className="min-h-[60px] border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200 resize-none"
-                  value={problemForm.explanation}
-                  onChange={(e) =>
-                    setProblemForm({
-                      ...problemForm,
-                      explanation: e.target.value,
-                    })
-                  }
-                />
-              </div>
+              </div> */}
             </div>
           </div>
 

@@ -8,6 +8,28 @@ export const courseSchema = z.object({
     }),
 })
 
+export const problemSchema = z.object({
+  title: z.string().min(3, "Title must be atleast 3 characters"),
+  description: z.string().min(10, "Description must be atleast 10 characters"),
+  difficulty: z.enum(["Easy", "Medium", "Hard"], {
+    errorMap: () => ({ message: "Difficulty must be one of 'Easy', 'Medium', or 'Hard'" }),
+  }),
+  tags: z.array(z.string()).optional(),
+  timeLimit: z.coerce.number().min(1, "Time limit must be at least 1 second").max(10, "Time limit cannot exceed 10 seconds"),
+  memoryLimit: z.coerce.number().min(32, "Memory limit must be at least 32 MB").max(1024, "Memory limit cannot exceed 1024 MB"),
+  constraints: z.array(z.string()).optional(),
+  categoryId: z.string().min(3, "Category must be atleast 3 characters"),
+  sampleInput: z.string().optional(),
+  sampleOutput: z.string().optional(),
+  // teacherSolution: z.string().min(10, "Teacher solution must be atleast 10 characters"),
+  // teacherSolutionLanguage: z.enum(["Python", "JavaScript", "Cpp", "Java"], {
+  //   errorMap: () => ({ message: "Language must be one of 'Python', 'JavaScript', 'Cpp', or 'Java'" }),
+  // }),
+})
 
+
+export const categorySchema = z.object({
+  name: z.string().min(3).max(100),
+});
 
 export type CourseSchema = z.infer<typeof courseSchema>;
