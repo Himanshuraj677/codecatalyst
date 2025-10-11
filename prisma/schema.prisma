@@ -142,7 +142,8 @@ model Problem {
   timeLimit               Int
   memoryLimit             Int
   constraints             String[]
-  category                String
+  categoryId              String
+  category                ProblemCategory     @relation(fields: [categoryId], references: [id])
   createdById             String
   createdAt               DateTime            @default(now())
   teacherSolution         String
@@ -153,7 +154,7 @@ model Problem {
   testCases               TestCase[]
 
   @@index([createdById])
-  @@index([category])
+  @@index([categoryId])
 }
 
 model TestCase {
@@ -214,4 +215,12 @@ model Submission {
   student    User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
   problem    Problem     @relation(fields: [problemId], references: [id], onDelete: Cascade)
   assignment Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model ProblemCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  problems Problem[]
 }
