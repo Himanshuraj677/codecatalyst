@@ -44,3 +44,38 @@ export async function POST(req: NextRequest) {
     return handleApiError(error, "Failed to create problem");
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    console.log("Fetching problems...");
+    const checkAccess = await checkRoleBasedAccess({ req });
+    if (!checkAccess.hasAccess || !checkAccess.user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized", message: checkAccess.message },
+        { status: 401 }
+      );
+    }
+    console.log("User authenticated, fetching problems...");
+    const problems = await prisma.problem.findMany({
+      select: {
+        id: true,
+        title: true,
+        difficulty: true,
+        tags: true,
+        timeLimit: true,
+        memoryLimit: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json({ success: true, data: problems, message: "Fetched successfully" });
+  } catch (error) {
+    return handleApiError(error, "Failed to fetch problems");
+  }
+}

@@ -14,7 +14,6 @@ export default async function checkRoleBasedAccess({
   if (!session || !session.user) {
     return { hasAccess: false, user: null, message: "You are not logged in" };
   }
-
   if (permissions) {
     const hasPermission = await auth.api.userHasPermission({
       body: {
