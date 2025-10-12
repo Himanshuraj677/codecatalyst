@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -13,22 +13,17 @@ import {
 } from "./ui/select";
 import { PopoverContent, Popover, PopoverTrigger } from "./ui/popover";
 import { Textarea } from "./ui/textarea";
-import {
-  Target,
-  CalendarIcon,
-  Calendar,
-  Search,
-  Eye,
-  Save,
-} from "lucide-react";
+import { Target, CalendarIcon, Search, Eye, Save } from "lucide-react";
 import { User } from "@/app/context/userContext";
-import { getUserCourses, mockProblems } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
+import Calendar from "react-calendar";
 
 const CreateAssignment = ({ user }: { user: User }) => {
   const [problemSearch, setProblemSearch] = useState("");
+  const [courses, setCourses] = useState<any[]>([]);
+  const [DSA_Problems, setDSA_Problems] = useState<any[]>([]);
   const [assignmentForm, setAssignmentForm] = useState({
     title: "",
     description: "",
@@ -38,32 +33,79 @@ const CreateAssignment = ({ user }: { user: User }) => {
     maxAttempts: "",
   });
 
-  const courses = getUserCourses(user!.id, "teacher");
-  const filteredProblems = mockProblems.filter(
-    (problem) =>
-      problem.title.toLowerCase().includes(problemSearch.toLowerCase()) ||
-      problem.tags.some((tag) =>
-        tag.toLowerCase().includes(problemSearch.toLowerCase())
-      )
-  );
+  useEffect(() => {
+    const callApi = async () => {
+      try {
+        const promise1 = fetch("/api/problems", {
+          credentials: "include",
+        });
+        const promise2 = fetch("/api/courses", {
+          credentials: "include",
+        });
+        const [response1, response2] = await Promise.all([promise1, promise2]);
+        const data1 = await response1.json();
+        const data2 = await response2.json();
+        if (!response1.ok || !data1.success) {
+          toast.error(data1.message || "Failed to fetch problems");
+          return;
+        }
+        if (!response2.ok || !data2.success) {
+          toast.error(data2.message || "Failed to fetch courses");
+          return;
+        }
+        setDSA_Problems(data1.data);
+        setCourses(data2.data);
+      } catch (error) {
+        let errorMessage = "An unexpected error occurred";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        toast.error(errorMessage);
+      }
+    };
+    callApi();
+  }, []);
 
   const toggleProblemSelection = (problemId: string) => {
-    setAssignmentForm((prev) => ({
-      ...prev,
-      selectedProblems: prev.selectedProblems.includes(problemId)
-        ? prev.selectedProblems.filter((id) => id !== problemId)
-        : [...prev.selectedProblems, problemId],
-    }));
+    console.log("Toggling problem:", problemId);
+    setAssignmentForm((prev) => {
+      const isSelected = prev.selectedProblems.includes(problemId);
+      return {
+        ...prev,
+        selectedProblems: isSelected
+          ? prev.selectedProblems.filter((id) => id !== problemId)
+          : [...prev.selectedProblems, problemId],
+      };
+    });
   };
 
-  const handleAssignmentSubmit = (e: React.FormEvent) => {
+  const handleAssignmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (assignmentForm.selectedProblems.length === 0) {
       toast.error("Please select at least one problem for the assignment");
       return;
     }
-    console.log("Creating assignment:", assignmentForm);
-    toast.success("Assignment created successfully!");
+    try {
+      const response = await fetch("/api/assignments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(assignmentForm),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        toast.error(data?.message || "Failed to create assignment");
+        return;
+      }
+      toast.success("Assignment created successfully!");
+    } catch (error) {
+      let errorMessage = "An unexpected error occurred";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    }
 
     // Reset form
     setAssignmentForm({
@@ -88,6 +130,7 @@ const CreateAssignment = ({ user }: { user: User }) => {
         return "bg-slate-50 text-slate-700 border-slate-200";
     }
   };
+
   return (
     <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
       <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 p-8 border-b border-blue-100">
@@ -171,26 +214,36 @@ const CreateAssignment = ({ user }: { user: User }) => {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className={cn(
-                        "w-full h-12 justify-start text-left font-normal border-0 bg-slate-50 rounded-xl hover:bg-white focus:ring-2 focus:ring-blue-500 transition-all duration-200",
-                        !assignmentForm.dueDate && "text-slate-500"
-                      )}
+                      data-empty={!assignmentForm.dueDate}
+                      className="data-[empty=true]:text-muted-foreground w-[280px] justify-start text-left font-normal"
                     >
-                      <CalendarIcon className="mr-3 h-4 w-4" />
-                      {assignmentForm.dueDate
-                        ? format(assignmentForm.dueDate, "PPP")
-                        : "Pick a date"}
+                      <CalendarIcon className="mr-2 h-5 w-5" />
+                      {assignmentForm.dueDate ? (
+                        format(assignmentForm.dueDate, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 rounded-xl border-0 shadow-xl">
-                    <Calendar
-                      mode="single"
-                      selected={assignmentForm.dueDate}
-                      onSelect={(date) =>
-                        setAssignmentForm({ ...assignmentForm, dueDate: date })
-                      }
-                      initialFocus
-                    />
+
+                  <PopoverContent className="w-auto p-0">
+                    {/* Prevent Popover from closing when clicking inside */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Calendar
+                        value={assignmentForm.dueDate || null}
+                        onChange={(value) => {
+                          // value might still be null
+                          if (value instanceof Date) {
+                            setAssignmentForm({
+                              ...assignmentForm,
+                              dueDate: value,
+                            });
+                          }
+                        }}
+                        // calendarType="US" // Optional: week starts on Sunday
+                        minDate={new Date()} // Optional: prevent past dates
+                      />
+                    </div>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -273,7 +326,7 @@ const CreateAssignment = ({ user }: { user: User }) => {
 
             <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-200 bg-white">
               <div className="p-4 space-y-3">
-                {filteredProblems.map((problem) => (
+                {DSA_Problems.map((problem) => (
                   <div
                     key={problem.id}
                     className={cn(
@@ -282,7 +335,13 @@ const CreateAssignment = ({ user }: { user: User }) => {
                         ? "border-blue-300 bg-blue-50/50 shadow-sm"
                         : "border-slate-100 hover:border-slate-200 hover:bg-slate-50/50"
                     )}
-                    onClick={() => toggleProblemSelection(problem.id)}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest("input")) {
+                        return;
+                      }
+                      toggleProblemSelection(problem.id);
+                    }}
                   >
                     <Checkbox
                       checked={assignmentForm.selectedProblems.includes(

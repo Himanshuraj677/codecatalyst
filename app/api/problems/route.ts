@@ -47,7 +47,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("Fetching problems...");
     const checkAccess = await checkRoleBasedAccess({ req });
     if (!checkAccess.hasAccess || !checkAccess.user) {
       return NextResponse.json(
@@ -55,11 +54,11 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-    console.log("User authenticated, fetching problems...");
     const problems = await prisma.problem.findMany({
       select: {
         id: true,
         title: true,
+        description: true,
         difficulty: true,
         tags: true,
         timeLimit: true,

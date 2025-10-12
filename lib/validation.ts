@@ -32,4 +32,17 @@ export const categorySchema = z.object({
   name: z.string().min(3).max(100),
 });
 
+export const assignmentSchema = z.object({
+  title: z.string().min(3, "Title must be atleast 3 characters"),
+  description: z.string().min(10, "Description must be atleast 10 characters"),
+  courseId: z.string().min(3, "Course ID must be valid"),
+  selectedProblems: z.array(z.string().min(3)).min(1, "Atleast one problem must be selected"),
+  dueDate: z.coerce.date().min(new Date(), "Due date must be in the future"),
+  maxAttempts: z
+  .coerce.number()
+  .min(1, "Max attempts must be at least 1")
+  .default(1000)
+  .optional()
+});
+
 export type CourseSchema = z.infer<typeof courseSchema>;
