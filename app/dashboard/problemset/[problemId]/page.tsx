@@ -1,12 +1,22 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import {
   Clock,
   MemoryStick,
@@ -20,15 +30,16 @@ import {
   FileText,
   TestTube,
   History,
-} from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
-import { getProblemById, getProblemSubmissions, getUserSubmissions } from "@/lib/mock-data"
-import { useParams } from "next/navigation"
-import { toast } from "react-toastify"
-import dynamic from "next/dynamic"
+} from "lucide-react";
+import { useUser } from "@/hooks/useUser";
+import { useParams } from "next/navigation";
+import { toast } from "react-toastify";
+import dynamic from "next/dynamic";
 
 // Dynamically import Monaco Editor to avoid SSR issues
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false })
+const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
+  ssr: false,
+});
 
 const languageTemplates = {
   python: `def solution():
@@ -75,44 +86,57 @@ int main() {
     cout << sol.solution() << endl;
     return 0;
 }`,
-}
+};
 
 export default function ProblemPage() {
-  const { user } = useAuth()
-  const params = useParams()
-  const problemId = params.problemId as string
-  const editorRef = useRef<any>(null)
+  const { user, isLoading } = useUser();
+  const [problem, setProblem] = useState<any>();
+  const [problemSubmissions, setProblemSubmissions] = useState<any[]>([]);
+  const [userSubmissions, setUserSubmissions] = useState<any[]>([]);
 
-  const problem = getProblemById(problemId)
-  const problemSubmissions = getProblemSubmissions(problemId)
-  const userSubmissions = getUserSubmissions(user!.id).filter((s) => s.problemId === problemId)
+  const params = useParams();
+  const problemId = params.problemId as string;
+  const editorRef = useRef<any>(null);
 
-  const [code, setCode] = useState("")
-  const [language, setLanguage] = useState("python")
-  const [isRunning, setIsRunning] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [testResults, setTestResults] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState("description")
+  // problem = getProblemById(problemId)
+  // problemSubmissions = getProblemSubmissions(problemId)
+  // userSubmissions = getUserSubmissions(user!.id).filter((s) => s.problemId === problemId)
+
+  const [code, setCode] = useState("");
+  const [language, setLanguage] = useState("python");
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("description");
 
   useEffect(() => {
-    if (language && languageTemplates[language as keyof typeof languageTemplates]) {
-      setCode(languageTemplates[language as keyof typeof languageTemplates])
+
+  }, []);
+
+  useEffect(() => {
+    if (
+      language &&
+      languageTemplates[language as keyof typeof languageTemplates]
+    ) {
+      setCode(languageTemplates[language as keyof typeof languageTemplates]);
     }
-  }, [language])
+  }, [language]);
 
   if (!problem) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Problem not found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Problem not found
+          </h3>
         </div>
       </div>
-    )
+    );
   }
 
   const handleRunCode = async () => {
-    setIsRunning(true)
-    setActiveTab("console")
+    setIsRunning(true);
+    setActiveTab("console");
 
     // Mock code execution
     setTimeout(() => {
@@ -123,64 +147,80 @@ export default function ProblemPage() {
         memoryUsed: Math.floor(Math.random() * 50) + 10,
         testCasesPassed: Math.floor(Math.random() * 3) + 1,
         totalTestCases: 3,
-      }
+      };
 
-      setTestResults(mockResults)
-      setIsRunning(false)
+      setTestResults(mockResults);
+      setIsRunning(false);
 
       if (mockResults.success) {
-        toast.success("Code executed successfully!")
+        toast.success("Code executed successfully!");
       } else {
-        toast.error("Test cases failed")
+        toast.error("Test cases failed");
       }
-    }, 2000)
-  }
+    }, 2000);
+  };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     // Mock submission
     setTimeout(() => {
-      const results = ["Accepted", "Wrong Answer", "Time Limit Exceeded", "Runtime Error"]
-      const result = results[Math.floor(Math.random() * results.length)]
+      const results = [
+        "Accepted",
+        "Wrong Answer",
+        "Time Limit Exceeded",
+        "Runtime Error",
+      ];
+      const result = results[Math.floor(Math.random() * results.length)];
 
-      setIsSubmitting(false)
+      setIsSubmitting(false);
 
       if (result === "Accepted") {
-        toast.success("Solution Accepted! 🎉")
+        toast.success("Solution Accepted! 🎉");
       } else {
-        toast.error(`${result} - Try again!`)
+        toast.error(`${result} - Try again!`);
       }
-    }, 3000)
-  }
+    }, 3000);
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Easy":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "Medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Hard":
-        return "bg-red-100 text-red-800 border-red-200"
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Accepted":
-        return "text-green-600"
+        return "text-green-600";
       case "Wrong Answer":
-        return "text-red-600"
+        return "text-red-600";
       case "Pending":
-        return "text-yellow-600"
+        return "text-yellow-600";
       default:
-        return "text-gray-600"
+        return "text-gray-600";
     }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <h3 className="text-lg font-medium text-gray-900 mt-4">Loading...</h3>
+        </div>
+      </div>
+    );
   }
 
-  const isSolved = userSubmissions.some((s) => s.status === "Accepted")
+  const isSolved = userSubmissions.some((s) => s.status === "Accepted");
 
   return (
     <div className="h-screen flex flex-col bg-slate-50">
@@ -194,8 +234,12 @@ export default function ProblemPage() {
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 </div>
               )}
-              <h1 className="text-2xl font-bold text-slate-900">{problem.title}</h1>
-              <Badge className={getDifficultyColor(problem.difficulty)}>{problem.difficulty}</Badge>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {problem.title}
+              </h1>
+              <Badge className={getDifficultyColor(problem.difficulty)}>
+                {problem.difficulty}
+              </Badge>
             </div>
           </div>
 
@@ -220,7 +264,11 @@ export default function ProblemPage() {
           {/* Problem Description Panel */}
           <ResizablePanel defaultSize={40} minSize={30}>
             <div className="h-full bg-white border-r border-slate-200">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="h-full flex flex-col"
+              >
                 <div className="border-b border-slate-200 px-4">
                   <TabsList className="bg-transparent">
                     <TabsTrigger
@@ -241,11 +289,18 @@ export default function ProblemPage() {
                 </div>
 
                 <div className="flex-1 overflow-auto">
-                  <TabsContent value="description" className="p-6 space-y-6 m-0">
+                  <TabsContent
+                    value="description"
+                    className="p-6 space-y-6 m-0"
+                  >
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Problem Statement</h3>
+                      <h3 className="text-lg font-semibold mb-3">
+                        Problem Statement
+                      </h3>
                       <div className="prose prose-slate max-w-none">
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-line">{problem.description}</p>
+                        <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                          {problem.description}
+                        </p>
                       </div>
                     </div>
 
@@ -253,28 +308,38 @@ export default function ProblemPage() {
                       <h3 className="text-lg font-semibold mb-3">Example</h3>
                       <div className="space-y-4">
                         <div>
-                          <h4 className="font-medium text-slate-900 mb-2">Input:</h4>
+                          <h4 className="font-medium text-slate-900 mb-2">
+                            Input:
+                          </h4>
                           <pre className="bg-slate-100 p-3 rounded-lg text-sm font-mono text-slate-800 overflow-x-auto">
                             {problem.sampleInput}
                           </pre>
                         </div>
                         <div>
-                          <h4 className="font-medium text-slate-900 mb-2">Output:</h4>
+                          <h4 className="font-medium text-slate-900 mb-2">
+                            Output:
+                          </h4>
                           <pre className="bg-slate-100 p-3 rounded-lg text-sm font-mono text-slate-800 overflow-x-auto">
                             {problem.sampleOutput}
                           </pre>
                         </div>
                         {problem.explanation && (
                           <div>
-                            <h4 className="font-medium text-slate-900 mb-2">Explanation:</h4>
-                            <p className="text-slate-700">{problem.explanation}</p>
+                            <h4 className="font-medium text-slate-900 mb-2">
+                              Explanation:
+                            </h4>
+                            <p className="text-slate-700">
+                              {problem.explanation}
+                            </p>
                           </div>
                         )}
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Constraints</h3>
+                      <h3 className="text-lg font-semibold mb-3">
+                        Constraints
+                      </h3>
                       <ul className="space-y-1">
                         {problem.constraints.map((constraint, index) => (
                           <li key={index} className="text-slate-700 text-sm">
@@ -288,7 +353,11 @@ export default function ProblemPage() {
                       <h3 className="text-lg font-semibold mb-3">Tags</h3>
                       <div className="flex flex-wrap gap-2">
                         {problem.tags.map((tag) => (
-                          <Badge key={tag} variant="outline" className="border-slate-300 text-slate-600">
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className="border-slate-300 text-slate-600"
+                          >
                             <Tag className="h-3 w-3 mr-1" />
                             {tag}
                           </Badge>
@@ -301,7 +370,10 @@ export default function ProblemPage() {
                     <div className="space-y-4">
                       {userSubmissions.length > 0 ? (
                         userSubmissions.map((submission) => (
-                          <Card key={submission.id} className="border-slate-200">
+                          <Card
+                            key={submission.id}
+                            className="border-slate-200"
+                          >
                             <CardContent className="p-4">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center space-x-2">
@@ -312,17 +384,29 @@ export default function ProblemPage() {
                                   ) : (
                                     <AlertCircle className="h-4 w-4 text-yellow-600" />
                                   )}
-                                  <span className={`font-medium ${getStatusColor(submission.status)}`}>
+                                  <span
+                                    className={`font-medium ${getStatusColor(
+                                      submission.status
+                                    )}`}
+                                  >
                                     {submission.status}
                                   </span>
                                 </div>
-                                <Badge variant="outline">{submission.language}</Badge>
+                                <Badge variant="outline">
+                                  {submission.language}
+                                </Badge>
                               </div>
                               <div className="text-sm text-slate-600">
-                                <p>Submitted {new Date(submission.submittedAt).toLocaleString()}</p>
+                                <p>
+                                  Submitted{" "}
+                                  {new Date(
+                                    submission.submittedAt
+                                  ).toLocaleString()}
+                                </p>
                                 {submission.executionTime && (
                                   <p>
-                                    Runtime: {submission.executionTime}ms | Memory: {submission.memoryUsed}MB
+                                    Runtime: {submission.executionTime}ms |
+                                    Memory: {submission.memoryUsed}MB
                                   </p>
                                 )}
                               </div>
@@ -332,8 +416,12 @@ export default function ProblemPage() {
                       ) : (
                         <div className="text-center py-8">
                           <Code2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-slate-900 mb-2">No submissions yet</h3>
-                          <p className="text-slate-600">Submit your first solution to see it here</p>
+                          <h3 className="text-lg font-medium text-slate-900 mb-2">
+                            No submissions yet
+                          </h3>
+                          <p className="text-slate-600">
+                            Submit your first solution to see it here
+                          </p>
                         </div>
                       )}
                     </div>
@@ -413,7 +501,7 @@ export default function ProblemPage() {
                   value={code}
                   onChange={(value) => setCode(value || "")}
                   onMount={(editor) => {
-                    editorRef.current = editor
+                    editorRef.current = editor;
                   }}
                   theme="vs-light"
                   options={{
@@ -449,7 +537,10 @@ export default function ProblemPage() {
                         </TabsTrigger>
                       </TabsList>
                     </div>
-                    <TabsContent value="console" className="p-4 h-40 overflow-auto m-0">
+                    <TabsContent
+                      value="console"
+                      className="p-4 h-40 overflow-auto m-0"
+                    >
                       {isRunning ? (
                         <div className="flex items-center space-x-2 text-slate-600">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -463,8 +554,16 @@ export default function ProblemPage() {
                             ) : (
                               <XCircle className="h-5 w-5 text-red-600" />
                             )}
-                            <span className={`font-medium ${testResults.success ? "text-green-600" : "text-red-600"}`}>
-                              {testResults.success ? "Test Passed" : "Test Failed"}
+                            <span
+                              className={`font-medium ${
+                                testResults.success
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {testResults.success
+                                ? "Test Passed"
+                                : "Test Failed"}
                             </span>
                           </div>
 
@@ -472,13 +571,18 @@ export default function ProblemPage() {
                             <div className="text-sm">
                               <div className="mb-2">
                                 <span className="font-medium">Output:</span>
-                                <pre className="mt-1 text-slate-700 font-mono">{testResults.output}</pre>
+                                <pre className="mt-1 text-slate-700 font-mono">
+                                  {testResults.output}
+                                </pre>
                               </div>
                               <div className="flex items-center space-x-4 text-slate-600">
-                                <span>Runtime: {testResults.executionTime}ms</span>
+                                <span>
+                                  Runtime: {testResults.executionTime}ms
+                                </span>
                                 <span>Memory: {testResults.memoryUsed}MB</span>
                                 <span>
-                                  Test Cases: {testResults.testCasesPassed}/{testResults.totalTestCases}
+                                  Test Cases: {testResults.testCasesPassed}/
+                                  {testResults.totalTestCases}
                                 </span>
                               </div>
                             </div>
@@ -494,5 +598,5 @@ export default function ProblemPage() {
         </ResizablePanelGroup>
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitBatch, pollResults } from "@/lib/judge0";
-import { handleApiError } from "@/lib/error-handler";
 
 type TestCase = { input: string };
 
@@ -10,78 +9,61 @@ type RequestBody = {
   problemId: string;
 };
 
+// ✅ Mock DB (replace with actual DB later)
 const correctSolutions: Record<string, { code: string; languageId: number }> = {
   "problem-1": { code: "print(int(input())*2)", languageId: 71 },
 };
 
+// ✅ Hidden test cases (won’t be visible to user)
 const hiddenTestCases: Record<string, TestCase[]> = {
   "problem-1": [{ input: "2" }, { input: "5" }, { input: "10" }],
 };
 
-// Helper: Poll until all results ready
-async function pollBatch(tokens: string[], interval = 400) {
-  let results: any[] = [];
-  while (true) {
-    results = await pollResults(tokens);
-    const allDone = results.every((r) => r.status.id > 2);
-    if (allDone) break;
-    await new Promise((r) => setTimeout(r, interval));
-  }
-  return results;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const body: RequestBody = await req.json();
-    const { code, languageId, problemId } = body;
+    const { code, languageId, problemId }: RequestBody = await req.json();
 
     if (!code || !languageId || !problemId) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    if (!correctSolutions[problemId] || !hiddenTestCases[problemId]) {
-      return NextResponse.json(
-        { error: "Problem or hidden test cases not found" },
-        { status: 400 }
-      );
-    }
-
-    const userCode = code;
-    const userLang = languageId;
-    const correctCode = correctSolutions[problemId].code;
-    const correctLang = correctSolutions[problemId].languageId;
+    const correct = correctSolutions[problemId];
     const cases = hiddenTestCases[problemId];
 
-    // Submit both batches in parallel
+    if (!correct || !cases) {
+      return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+    }
+
+    // Run both user and correct solution in parallel
     const [userTokens, correctTokens] = await Promise.all([
-      submitBatch(userCode, userLang, cases),
-      submitBatch(correctCode, correctLang, cases),
+      submitBatch(code, languageId, cases),
+      submitBatch(correct.code, correct.languageId, cases),
     ]);
 
-    // Poll for both in parallel until all ready
+    // Wait for all results
     const [userResults, correctResults] = await Promise.all([
-      pollBatch(userTokens),
-      pollBatch(correctTokens),
+      pollResults(userTokens),
+      pollResults(correctTokens),
     ]);
 
     // Compare outputs
-    const finalResults = userResults.map((r, i) => {
-      const userOutput = r.stdout?.trim() || "";
-      const expectedOutput = correctResults[i].stdout?.trim() || "";
+    const results = userResults.map((r, i) => {
+      const userOut = r.stdout?.trim() || "";
+      const expectedOut = correctResults[i].stdout?.trim() || "";
       return {
         input: cases[i].input,
-        actual: userOutput,
-        expected: expectedOutput,
+        actual: userOut,
+        expected: expectedOut,
         status: r.status.description,
-        passed: userOutput === expectedOutput,
+        passed: userOut === expectedOut,
       };
     });
 
-    // TODO: Store tokens in DB here for reference
-    // await db.submission.create({ tokens: userTokens, ... })
+    // TODO: Store `userTokens` in DB for tracking submissions
 
-    return NextResponse.json({ results: finalResults });
-  } catch (err: any) {
-    handleApiError(err);
+    return NextResponse.json({ results });
+  } catch (error) {
+    console.error("❌ Submission error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

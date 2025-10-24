@@ -7,7 +7,16 @@ import { handleApiError } from "@/lib/error-handler";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {title, description, difficulty, tags, timeLimit, memoryLimit, constraints, categoryId} = problemSchema.parse(body);
+    const {
+      title,
+      description,
+      difficulty,
+      tags,
+      timeLimit,
+      memoryLimit,
+      constraints,
+      categoryId,
+    } = problemSchema.parse(body);
     const permissions = {
       problem: ["create"],
     };
@@ -22,14 +31,14 @@ export async function POST(req: NextRequest) {
     // Create problem in database
     const problem = await prisma.problem.create({
       data: {
-        title, 
-        description, 
-        difficulty, 
-        tags, 
-        timeLimit, 
-        memoryLimit, 
-        constraints, 
-        categoryId, 
+        title,
+        description,
+        difficulty,
+        tags,
+        timeLimit,
+        memoryLimit,
+        constraints,
+        categoryId,
         createdById: instructorId,
         teacherSolution: "skjdjbk  kjwjw jbjBKJBWE",
         teacherSolutionLanguage: "Python",
@@ -54,6 +63,7 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
+    const userId = checkAccess.user.id;
     const problems = await prisma.problem.findMany({
       select: {
         id: true,
@@ -70,10 +80,38 @@ export async function GET(req: NextRequest) {
           },
         },
         createdAt: true,
+        _count: {
+          select: { submission: true },
+        },
+        submission: {
+          where: {
+            id: userId,
+            status: "Accepted",
+          },
+          select: { id: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ success: true, data: problems, message: "Fetched successfully" });
+    const responseData = problems.map((problem) => ({
+      id: problem.id,
+      title: problem.title,
+      description: problem.description,
+      difficulty: problem.difficulty,
+      tags: problem.tags,
+      timeLimit: problem.timeLimit,
+      memoryLimit: problem.memoryLimit,
+      category: problem.category,
+      createdAt: problem.createdAt,
+      submissionCount: problem._count.submission,
+      isSolved: problem.submission.length > 0,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: responseData,
+      message: "Fetched successfully",
+    });
   } catch (error) {
     return handleApiError(error, "Failed to fetch problems");
   }
