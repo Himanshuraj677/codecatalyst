@@ -1,44 +1,21 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import {
-  Clock,
-  MemoryStick,
-  Tag,
-  Play,
-  Send,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Code2,
-  FileText,
-  TestTube,
-  History,
-} from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
-import { MarkdownPreview } from "@/components/MarkdownEditor";
 import { judge0ToMonaco } from "@/lib/judge0-to-monaco";
+import Header from "@/components/create-problem/page-header";
+import EditorHeader from "@/components/create-problem/editor-header";
+import LeftPanel from "@/components/create-problem/LeftPanel";
+import RightLowerPanel from "@/components/create-problem/RightLowerPanel";
 
-// Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
@@ -46,16 +23,11 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 export default function ProblemPage() {
   const { user, isLoading } = useUser();
   const [problem, setProblem] = useState<any>();
-  const [problemSubmissions, setProblemSubmissions] = useState<any[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<any[]>([]);
 
   const params = useParams();
   const problemId = params.problemId as string;
   const editorRef = useRef<any>(null);
-
-  // problem = getProblemById(problemId)
-  // problemSubmissions = getProblemSubmissions(problemId)
-  // userSubmissions = getUserSubmissions(user!.id).filter((s) => s.problemId === problemId)
 
   const [code, setCode] = useState("");
   const [languageId, setLanguageId] = useState("52");
@@ -65,9 +37,14 @@ export default function ProblemPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [testResults, setTestResults] = useState<any>(null);
+  // testResults is an array (based on the response you showed)
+  const [testResults, setTestResults] = useState<any[] | null>(null);
   const [testSummary, setTestSummary] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("description");
+
+  // Custom testcases state (you asked for one test case section — support multiple)
+  const [customTestcases, setCustomTestcases] = useState<{ input: string }[]>(
+    []
+  );
 
   const selectedLangName =
     languages.find((lang) => lang.id === languageId)?.name || "Plain Text";
@@ -87,6 +64,7 @@ export default function ProblemPage() {
             fetch(`/api/judge0/languages`).then((res) => res.json()),
           ]);
         setProblem(problemData.data);
+        console.log("Fetched Problem Data:", problemData.data);
         setUserSubmissions(userSubmissionsData.data);
         setLanguages(languageData.data);
       } catch (error) {
@@ -97,25 +75,21 @@ export default function ProblemPage() {
     };
 
     fetchProblemData();
-  }, []);
-
-  if (!problem || isFetching) {
-    return (
-      <div className="p-6">
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Problem not found
-          </h3>
-        </div>
-      </div>
-    );
-  }
+  }, [problemId]);
 
   const handleRunCode = async () => {
     try {
-      setActiveTab("console");
       setIsRunning(true);
-      const testCases = problem.testCases.map((tc) => ({ input: tc.input }));
+
+      // build testCases: include original problem testcases (if any) + the custom ones
+      const original = Array.isArray(problem.testCases)
+        ? problem.testCases.map((tc: any) => ({ input: tc.input }))
+        : [];
+
+      const custom = customTestcases.map((t) => ({ input: t.input }));
+
+      const testCases = [...original, ...custom];
+
       const res = await fetch("/api/run-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,12 +97,13 @@ export default function ProblemPage() {
       });
       if (!res.ok) {
         toast.error("Failed to run code");
+        setIsRunning(false);
         return;
       }
       const data = await res.json();
-      console.log("Run code response:", data);
-      setTestResults(data.results);
-      setTestSummary(data.summary);
+
+      setTestResults(Array.isArray(data.results) ? data.results : null);
+      setTestSummary(data.summary ?? null);
     } catch (error) {
       toast.error("Failed to run code");
     } finally {
@@ -159,33 +134,9 @@ export default function ProblemPage() {
     }, 3000);
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case "Easy":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "Medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "Hard":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  const isSolved = userSubmissions.some((s) => s.status === "Accepted");
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Accepted":
-        return "text-green-600";
-      case "Wrong Answer":
-        return "text-red-600";
-      case "Pending":
-        return "text-yellow-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -196,234 +147,47 @@ export default function ProblemPage() {
     );
   }
 
-  const isSolved = userSubmissions.some((s) => s.status === "Accepted");
+  if (!problem) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Problem not found
+          </h3>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              {isSolved && (
-                <div className="p-1 bg-green-100 rounded-full">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </div>
-              )}
-              <h1 className="text-2xl font-bold text-slate-900">
-                {problem.title}
-              </h1>
-              <Badge className={getDifficultyColor(problem.difficulty)}>
-                {problem.difficulty}
-              </Badge>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-4 text-sm text-slate-600">
-              <div className="flex items-center space-x-1">
-                <Clock className="h-4 w-4" />
-                <span>{problem.timeLimit}s</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <MemoryStick className="h-4 w-4" />
-                <span>{problem.memoryLimit}MB</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <Header isSolved={isSolved} problem={problem} />
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Problem Description Panel */}
           <ResizablePanel defaultSize={40} minSize={30}>
-            <div className="h-full bg-white border-r border-slate-200">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="h-full flex flex-col"
-              >
-                <div className="border-b border-slate-200 px-4">
-                  <TabsList className="bg-transparent">
-                    <TabsTrigger
-                      value="description"
-                      className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Description
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="submissions"
-                      className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700"
-                    >
-                      <History className="h-4 w-4 mr-2" />
-                      Submissions ({userSubmissions.length})
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <div className="flex-1 overflow-auto">
-                  <TabsContent
-                    value="description"
-                    className="p-6 space-y-6 m-0"
-                  >
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">
-                        Problem Statement
-                      </h3>
-                      <div className="prose prose-slate max-w-none">
-                        <MarkdownPreview content={problem.description} />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Tags</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {problem.tags.map((tag: string) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="border-slate-300 text-slate-600"
-                          >
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="submissions" className="p-6 m-0">
-                    <div className="space-y-4">
-                      {userSubmissions.length > 0 ? (
-                        userSubmissions.map((submission) => (
-                          <Card
-                            key={submission.id}
-                            className="border-slate-200"
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  {submission.status === "Accepted" ? (
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                  ) : submission.status === "Wrong Answer" ? (
-                                    <XCircle className="h-4 w-4 text-red-600" />
-                                  ) : (
-                                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                  )}
-                                  <span
-                                    className={`font-medium ${getStatusColor(
-                                      submission.status
-                                    )}`}
-                                  >
-                                    {submission.status}
-                                  </span>
-                                </div>
-                                <Badge variant="outline">
-                                  {submission.language}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-slate-600">
-                                <p>
-                                  Submitted{" "}
-                                  {new Date(
-                                    submission.submittedAt
-                                  ).toLocaleString()}
-                                </p>
-                                {submission.executionTime && (
-                                  <p>
-                                    Runtime: {submission.executionTime}ms |
-                                    Memory: {submission.memoryUsed}MB
-                                  </p>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <Code2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-slate-900 mb-2">
-                            No submissions yet
-                          </h3>
-                          <p className="text-slate-600">
-                            Submit your first solution to see it here
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </div>
-              </Tabs>
-            </div>
+            <LeftPanel problem={problem} userSubmissions={userSubmissions} />
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
           {/* Code Editor Panel */}
           <ResizablePanel defaultSize={60} minSize={40}>
-            <div className="h-full flex flex-col bg-white">
+            <ResizablePanelGroup direction="vertical" className="h-full">
               {/* Editor Header */}
-              <div className="border-b border-slate-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Select value={languageId} onValueChange={setLanguageId}>
-                      <SelectTrigger className="w-40 border-slate-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languages.map((language) => (
-                          <SelectItem key={language.id} value={language.id}>
-                            {language.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleRunCode}
-                      disabled={isRunning}
-                      className="border-slate-200 bg-transparent"
-                    >
-                      {isRunning ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                          Running...
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-4 w-4 mr-2" />
-                          Run Code
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={isSubmitting}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Submit
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Monaco Editor */}
-              <div className="flex-1">
+              <ResizablePanel defaultSize={80} minSize={50}>
+                <EditorHeader
+                  languageId={languageId}
+                  setLanguageId={setLanguageId}
+                  isRunning={isRunning}
+                  handleRunCode={handleRunCode}
+                  isSubmitting={isSubmitting}
+                  handleSubmit={handleSubmit}
+                  languages={languages}
+                />
+                {/* Monaco Editor */}
                 <MonacoEditor
                   height="100%"
                   language={monacoLang}
@@ -449,80 +213,23 @@ export default function ProblemPage() {
                     padding: { top: 16, bottom: 16 },
                   }}
                 />
-              </div>
-
-              {/* Console/Results */}
-              {(testResults || isRunning || true) && (
-                <div className="border-t border-slate-200 bg-slate-50">
-                  <Tabs value="console" className="h-48">
-                    <div className="border-b border-slate-200 px-4">
-                      <TabsList className="bg-transparent">
-                        <TabsTrigger
-                          value="console"
-                          className="data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                        >
-                          <TestTube className="h-4 w-4 mr-2" />
-                          Console
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-                    <TabsContent
-                      value="console"
-                      className="p-4 h-40 overflow-auto m-0"
-                    >
-                      {isRunning ? (
-                        <div className="flex items-center space-x-2 text-slate-600">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                          <span>Running your code...</span>
-                        </div>
-                      ) : testResults ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center space-x-2">
-                            {testResults.success ? (
-                              <CheckCircle className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <XCircle className="h-5 w-5 text-red-600" />
-                            )}
-                            <span
-                              className={`font-medium ${
-                                testResults.success
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {testResults.success
-                                ? "Test Passed"
-                                : "Test Failed"}
-                            </span>
-                          </div>
-
-                          <div className="bg-white rounded-lg p-3 border border-slate-200">
-                            <div className="text-sm">
-                              <div className="mb-2">
-                                <span className="font-medium">Output:</span>
-                                <pre className="mt-1 text-slate-700 font-mono">
-                                  {testResults.output}
-                                </pre>
-                              </div>
-                              <div className="flex items-center space-x-4 text-slate-600">
-                                <span>
-                                  Runtime: {testResults.executionTime}ms
-                                </span>
-                                <span>Memory: {testResults.memoryUsed}MB</span>
-                                <span>
-                                  Test Cases: {testResults.testCasesPassed}/
-                                  {testResults.totalTestCases}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                    </TabsContent>
-                  </Tabs>
-                </div>
-              )}
-            </div>
+              </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                className="!h-1 bg-gray-200 hover:bg-gray-400"
+              />
+              {/* Right Lower Panel */}
+              <ResizablePanel defaultSize={20} minSize={10}>
+                <RightLowerPanel
+                  testResults={testResults}
+                  testSummary={testSummary}
+                  customTestcases={customTestcases}
+                  setCustomTestcases={setCustomTestcases}
+                  handleRunCode={handleRunCode}
+                  isRunning={isRunning}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
