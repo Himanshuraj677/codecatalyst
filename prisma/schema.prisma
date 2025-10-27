@@ -134,24 +134,24 @@ model Enrollment {
 }
 
 model Problem {
-  id                      String              @id @default(cuid())
-  title                   String
-  description             String
-  difficulty              ProblemDifficulty
-  tags                    String[]
-  timeLimit               Int
-  memoryLimit             Int
-  constraints             String[]
-  categoryId              String
-  category                ProblemCategory     @relation(fields: [categoryId], references: [id])
-  createdById             String
-  createdAt               DateTime            @default(now())
-  teacherSolution         String
-  teacherSolutionLanguage String
-  createdBy               User                @relation(fields: [createdById], references: [id])
-  assignment              AssignmentProblem[]
-  submission              Submission[]
-  testCases               TestCase[]
+  id                        String              @id @default(cuid())
+  title                     String
+  description               String
+  difficulty                ProblemDifficulty
+  tags                      String[]
+  timeLimit                 Int
+  memoryLimit               Int
+  constraints               String[]
+  categoryId                String
+  category                  ProblemCategory     @relation(fields: [categoryId], references: [id])
+  createdById               String
+  createdAt                 DateTime            @default(now())
+  teacherSolution           String
+  teacherSolutionLanguageId Int
+  createdBy                 User                @relation(fields: [createdById], references: [id])
+  assignment                AssignmentProblem[]
+  submission                Submission[]
+  testCases                 TestCase[]
 
   @@index([createdById])
   @@index([categoryId])
