@@ -15,11 +15,11 @@ export async function GET(
         }
 
         const submissions = await prisma.submission.findMany({
-            where: {id: problemId, assignmentId: null},
+            where: {problemId, assignmentId: null},
             select: {
                 id: true,
                 problemId: true,
-                language: true,
+                languageId: true,
                 status: true,
                 executionTime: true,
                 memoryUsed: true

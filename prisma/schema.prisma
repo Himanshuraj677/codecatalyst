@@ -197,7 +197,7 @@ model Submission {
   problemId       String
   assignmentId    String?
   studentId       String
-  language        String
+  languageId      Int
   code            String
   status          SubmissionStatus @default(Pending)
   score           Int?
