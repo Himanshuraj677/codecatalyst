@@ -31,8 +31,8 @@ function CreateProblem() {
     timeLimit: "",
     memoryLimit: "",
     constraints: [] as string[],
-    solutionCode: "",
-    solutionLanguageId: "",
+    teacherSolution: "",
+    teacherSolutionLanguageId: "",
     testCases: [] as TestCase[],
   });
 
@@ -55,7 +55,7 @@ function CreateProblem() {
       try {
         const [categoriesRes, languagesRes] = await Promise.all([
           fetch("/api/categories"),
-          fetch(`${process.env.NEXT_PUBLIC_JUDGE0_URL}/languages`),
+          fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/judge0/languages`),
         ]);
 
         const [categoriesData, languagesData] = await Promise.all([
@@ -70,8 +70,7 @@ function CreateProblem() {
         }
 
         if (languagesRes.ok && languagesData?.success) {
-          console.log({languagesData});
-          setLanguages(languagesData);
+          setLanguages(languagesData.data);
         } else {
           console.error("Failed to load languages:", languagesData?.message);
         }
@@ -111,8 +110,8 @@ function CreateProblem() {
         memoryLimit: "",
         constraints: [],
         categoryId: "",
-        solutionCode: "",
-        solutionLanguageId: "",
+        teacherSolution: "",
+        teacherSolutionLanguageId: "",
         testCases: [],
       });
     } catch (error) {
@@ -376,9 +375,9 @@ function CreateProblem() {
               <div className="space-y-3">
                 <Label>Original Solution *</Label>
                 <Select
-                  value={problemForm.solutionLanguageId}
+                  value={problemForm.teacherSolutionLanguageId}
                   onValueChange={(value) =>
-                    setProblemForm({ ...problemForm, solutionLanguageId: value })
+                    setProblemForm({ ...problemForm, teacherSolutionLanguageId: value })
                   }
                   required
                 >
@@ -394,11 +393,11 @@ function CreateProblem() {
                   </SelectContent>
                 </Select>
                 <textarea
-                  value={problemForm.solutionCode}
+                  value={problemForm.teacherSolution}
                   onChange={(e) =>
                     setProblemForm({
                       ...problemForm,
-                      solutionCode: e.target.value,
+                      teacherSolution: e.target.value,
                     })
                   }
                   placeholder="Write the solution here"

@@ -36,12 +36,12 @@ import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import { MarkdownPreview } from "@/components/MarkdownEditor";
+import { judge0ToMonaco } from "@/lib/judge0-to-monaco";
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
-
 
 export default function ProblemPage() {
   const { user, isLoading } = useUser();
@@ -58,24 +58,37 @@ export default function ProblemPage() {
   // userSubmissions = getUserSubmissions(user!.id).filter((s) => s.problemId === problemId)
 
   const [code, setCode] = useState("");
-  const [language, setLanguage] = useState("python");
+  const [languageId, setLanguageId] = useState("52");
+  const [languages, setLanguages] = useState<{ id: string; name: string }[]>(
+    []
+  );
   const [isRunning, setIsRunning] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
+  const [testSummary, setTestSummary] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("description");
+
+  const selectedLangName =
+    languages.find((lang) => lang.id === languageId)?.name || "Plain Text";
+
+  const shortName = selectedLangName.split(" ")[0];
+
+  const monacoLang = judge0ToMonaco[shortName] || "plaintext";
 
   useEffect(() => {
     const fetchProblemData = async () => {
       setIsFetching(true);
       try {
-        const [problemData, userSubmissionsData] = await Promise.all([
-          fetch(`/api/problems/${problemId}`).then((res) => res.json()),
-          fetch(`/api/submissions/${problemId}`).then((res) => res.json()),
-        ]);
-        console.log(problemData.data, userSubmissionsData.data);
+        const [problemData, userSubmissionsData, languageData] =
+          await Promise.all([
+            fetch(`/api/problems/${problemId}`).then((res) => res.json()),
+            fetch(`/api/submissions/${problemId}`).then((res) => res.json()),
+            fetch(`/api/judge0/languages`).then((res) => res.json()),
+          ]);
         setProblem(problemData.data);
         setUserSubmissions(userSubmissionsData.data);
+        setLanguages(languageData.data);
       } catch (error) {
         toast.error("Failed to fetch problem data");
       } finally {
@@ -99,29 +112,28 @@ export default function ProblemPage() {
   }
 
   const handleRunCode = async () => {
-    setIsRunning(true);
-    setActiveTab("console");
-
-    // Mock code execution
-    setTimeout(() => {
-      const mockResults = {
-        success: Math.random() > 0.3,
-        output: Math.random() > 0.3 ? problem.sampleOutput : "Wrong output",
-        executionTime: Math.floor(Math.random() * 100) + 50,
-        memoryUsed: Math.floor(Math.random() * 50) + 10,
-        testCasesPassed: Math.floor(Math.random() * 3) + 1,
-        totalTestCases: 3,
-      };
-
-      setTestResults(mockResults);
-      setIsRunning(false);
-
-      if (mockResults.success) {
-        toast.success("Code executed successfully!");
-      } else {
-        toast.error("Test cases failed");
+    try {
+      setActiveTab("console");
+      setIsRunning(true);
+      const testCases = problem.testCases.map((tc) => ({ input: tc.input }));
+      const res = await fetch("/api/run-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, languageId, problemId, testCases }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to run code");
+        return;
       }
-    }, 2000);
+      const data = await res.json();
+      console.log("Run code response:", data);
+      setTestResults(data.results);
+      setTestSummary(data.summary);
+    } catch (error) {
+      toast.error("Failed to run code");
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -356,15 +368,16 @@ export default function ProblemPage() {
               <div className="border-b border-slate-200 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <Select value={language} onValueChange={setLanguage}>
+                    <Select value={languageId} onValueChange={setLanguageId}>
                       <SelectTrigger className="w-40 border-slate-200">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="python">Python</SelectItem>
-                        <SelectItem value="javascript">JavaScript</SelectItem>
-                        <SelectItem value="java">Java</SelectItem>
-                        <SelectItem value="cpp">C++</SelectItem>
+                        {languages.map((language) => (
+                          <SelectItem key={language.id} value={language.id}>
+                            {language.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -413,7 +426,7 @@ export default function ProblemPage() {
               <div className="flex-1">
                 <MonacoEditor
                   height="100%"
-                  language={language === "cpp" ? "cpp" : language}
+                  language={monacoLang}
                   value={code}
                   onChange={(value) => setCode(value || "")}
                   onMount={(editor) => {
@@ -439,7 +452,7 @@ export default function ProblemPage() {
               </div>
 
               {/* Console/Results */}
-              {(testResults || isRunning) && (
+              {(testResults || isRunning || true) && (
                 <div className="border-t border-slate-200 bg-slate-50">
                   <Tabs value="console" className="h-48">
                     <div className="border-b border-slate-200 px-4">

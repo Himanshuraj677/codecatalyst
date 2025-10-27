@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
       memoryLimit,
       constraints,
       categoryId,
+      teacherSolution,
+      teacherSolutionLanguageId,
+      testCases
     } = problemSchema.parse(body);
     const permissions = {
       problem: ["create"],
@@ -40,10 +43,15 @@ export async function POST(req: NextRequest) {
         constraints,
         categoryId,
         createdById: instructorId,
-        teacherSolution: "skjdjbk  kjwjw jbjBKJBWE",
-        teacherSolutionLanguage: "Python",
+        teacherSolution,
+        teacherSolutionLanguageId,
       },
     });
+    const formattedTestCases = testCases.map((t) => ({...t, problemId: problem.id}));
+
+    await prisma.testCase.createMany({
+      data: formattedTestCases
+    })
 
     return NextResponse.json(
       { success: true, data: problem, message: "Created successfully" },

@@ -9,7 +9,6 @@ export async function GET() {
       },
     });
 
-    // even if Judge0 returns 304, this ensures we handle it properly
     if (res.status === 304) {
       return NextResponse.json({
         success: true,

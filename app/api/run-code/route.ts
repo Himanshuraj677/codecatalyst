@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitBatch, pollResults } from "@/lib/judge0";
 import { handleApiError } from "@/lib/error-handler";
+import { prisma } from "@/lib/db";
 
 type TestCase = { input: string };
 
@@ -11,39 +12,49 @@ type RequestBody = {
   testCases: TestCase[];
 };
 
-// ✅ Mock correct solutions (use DB later)
-const correctSolutions: Record<string, { code: string; languageId: number }> = {
-  "problem-1": { code: "print(int(input())*2)", languageId: 71 },
-};
-
-// ✅ Visible test cases per problem (shown to user)
-const visibleTestCases: Record<string, TestCase[]> = {
-  "problem-1": [
-    { input: "5" },
-    { input: "10" },
-    { input: "25" },
-  ],
-};
-
 export async function POST(req: NextRequest) {
   try {
-    const { code, languageId, problemId, testCases }: RequestBody = await req.json();
+    const { code, languageId, problemId, testCases }: RequestBody =
+      await req.json();
 
     if (!code || !languageId || !problemId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const correct = correctSolutions[problemId];
-    const cases = testCases?.length ? testCases : visibleTestCases[problemId];
+    if (testCases.length == 0) {
+      return NextResponse.json(
+        { success: false, message: "Test case can't be empty" },
+        { status: 400 }
+      );
+    }
 
-    if (!correct || !cases) {
-      return NextResponse.json({ error: "Problem not found" }, { status: 404 });
+    const res = await prisma.problem.findUnique({
+      where: { id: problemId },
+      select: { teacherSolution: true, teacherSolutionLanguageId: true },
+    });
+
+    if (!res) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unable to evaluate code",
+          error: "Original solution can't be found",
+        },
+        { status: 404 }
+      );
     }
 
     // Run user code and correct code on the same inputs
     const [userTokens, correctTokens] = await Promise.all([
-      submitBatch(code, languageId, cases),
-      submitBatch(correct.code, correct.languageId, cases),
+      submitBatch(code, languageId, testCases),
+      submitBatch(
+        res.teacherSolution,
+        res.teacherSolutionLanguageId,
+        testCases
+      ),
     ]);
 
     const [userResults, correctResults] = await Promise.all([
@@ -56,15 +67,39 @@ export async function POST(req: NextRequest) {
       const userOut = r.stdout?.trim() || "";
       const expectedOut = correctResults[i].stdout?.trim() || "";
       return {
-        input: cases[i].input,
+        input: testCases[i].input,
         output: userOut,
         expected: expectedOut,
         passed: userOut === expectedOut,
         status: r.status.description,
+        time: r.time || "0",
+        memory: r.memory || 0,
       };
     });
 
-    return NextResponse.json({ results: compared });
+    // Compute aggregate performance
+
+    const totalCount = compared.length;
+    const passedCount = compared.filter((r) => r.passed).length;
+    const percentagePassed = ((passedCount / totalCount) * 100).toFixed(2);
+
+    const totalTime = compared.reduce(
+      (acc, cur) => acc + parseFloat(cur.time || "0"),
+      0
+    );
+    const totalMemory = compared.reduce((acc, cur) => acc + cur.memory, 0);
+
+    return NextResponse.json({
+      success: true,
+      results: compared,
+      summary: {
+        passedCount,
+        totalCount,
+        percentagePassed: `${percentagePassed}%`,
+        totalTime: totalTime.toFixed(3) + "s",
+        totalMemory: totalMemory + " KB",
+      },
+    });
   } catch (error) {
     return handleApiError(error);
   }
