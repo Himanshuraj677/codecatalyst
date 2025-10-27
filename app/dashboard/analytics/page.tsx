@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -29,7 +29,7 @@ import { getUserCourses, mockSubmissions, mockAssignments, mockUsers, getAssignm
 
 export default function AnalyticsPage() {
   const { user } = useUser()
-  const courses = getUserCourses(user!.id, "teacher")
+  const courses = useMemo(() => (user ? getUserCourses(user.id, "teacher") : []), [user]);
   const [selectedCourse, setSelectedCourse] = useState<string>("all")
   const [selectedAssignment, setSelectedAssignment] = useState<string>("all")
   const [performanceFilter, setPerformanceFilter] = useState<string>("all")

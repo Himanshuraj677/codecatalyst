@@ -8,6 +8,7 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { User } from "@/app/context/userContext";
 import { toast } from "react-toastify";
+import { MarkdownEditor } from "./MarkdownEditor";
 
 function CreateCourse({ user }: { user: User }) {
   const [courseForm, setCourseForm] = useState({
@@ -131,18 +132,11 @@ function CreateCourse({ user }: { user: User }) {
                 >
                   Course Description *
                 </Label>
-                <Textarea
-                  id="courseDescription"
-                  placeholder="Describe what students will learn in this course..."
-                  className="min-h-[160px] border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all duration-200 resize-none"
-                  value={courseForm.description}
-                  onChange={(e) =>
-                    setCourseForm({
-                      ...courseForm,
-                      description: e.target.value,
-                    })
+                <MarkdownEditor
+                  content={courseForm.description}
+                  setContent={(value) =>
+                    setCourseForm({ ...courseForm, description: value })
                   }
-                  required
                 />
               </div>
             </div>

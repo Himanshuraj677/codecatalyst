@@ -1,5 +1,5 @@
 // lib/judge0.ts
-const JUDGE0_URL = process.env.JUDGE0_URL;
+const JUDGE0_URL = process.env.NEXT_PUBLIC_JUDGE0_URL;
 if (!JUDGE0_URL) throw new Error("❌ JUDGE0_URL is not set in environment variables.");
 
 type TestCase = { input: string };

@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, FileText, User, CheckCircle, XCircle, AlertCircle, Code2, Trophy } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 import { mockAssignments, getAssignmentSubmissions, getAssignmentProblems, getUserSubmissions } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
 
 export default function AssignmentPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const params = useParams()
   const assignmentId = params.assignmentId as string
   const courseId = params.courseId as string

@@ -1,5 +1,6 @@
 import checkRoleBasedAccess from "@/lib/checkRoleAccess";
 import { prisma } from "@/lib/db";
+import { handleApiError } from "@/lib/error-handler";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -18,13 +19,15 @@ export async function GET(
             select: {
                 id: true,
                 problemId: true,
-
-                
+                language: true,
+                status: true,
+                executionTime: true,
+                memoryUsed: true
             }
         })
-        
+        return NextResponse.json({success: true, message: "Submissions fetched", data: submissions});
     } catch (error) {
-        
+       return handleApiError(error); 
     }
 }
 

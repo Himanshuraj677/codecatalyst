@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,9 +29,19 @@ export default function ProfilePage() {
     bio: user?.bio || "",
   })
 
-  const courses = getUserCourses(user!.id, user!.role)
-  const submissions = getUserSubmissions(user!.id)
-  const acceptedSubmissions = submissions.filter((s) => s.status === "Accepted")
+  const courses = useMemo(() => {
+  if (!user) return [];
+  return getUserCourses(user.id, user.role);
+}, [user]);
+
+const submissions = useMemo(() => {
+  if (!user) return [];
+  return getUserSubmissions(user.id);
+}, [user]);
+
+const acceptedSubmissions = useMemo(() => {
+  return submissions.filter((s) => s.status === "Accepted");
+}, [submissions]);
 
   const handleSave = () => {
     // Mock save functionality

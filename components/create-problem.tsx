@@ -4,7 +4,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Textarea } from "./ui/textarea";
+import { MarkdownEditor } from "./MarkdownEditor";
 import {
   Select,
   SelectTrigger,
@@ -13,6 +13,13 @@ import {
   SelectContent,
 } from "./ui/select";
 import { toast } from "react-toastify";
+import { Checkbox } from "./ui/checkbox";
+
+type TestCase = {
+  input: string;
+  expectedOutput: string;
+  isHidden: boolean;
+};
 
 function CreateProblem() {
   const [problemForm, setProblemForm] = useState({
@@ -23,52 +30,78 @@ function CreateProblem() {
     tags: [] as string[],
     timeLimit: "",
     memoryLimit: "",
-    // sampleInput: "",
-    // sampleOutput: "",
     constraints: [] as string[],
+    solutionCode: "",
+    solutionLanguageId: "",
+    testCases: [] as TestCase[],
   });
 
-  const [categories, setCategories] = useState([] as {id: string, name: string}[]);
+  const [categories, setCategories] = useState(
+    [] as { id: string; name: string }[]
+  );
   const [newTag, setNewTag] = useState("");
   const [newConstraint, setNewConstraint] = useState("");
+  const [newTestCase, setNewTestCase] = useState<TestCase>({
+    input: "",
+    expectedOutput: "",
+    isHidden: false,
+  });
+  const [languages, setLanguages] = useState(
+    [] as { id: string; name: string }[]
+  );
 
   useEffect(() => {
-    // Fetch categories from the API
-    const fetchCategories = async () => {
+    const initialFetch = async () => {
       try {
-        const response = await fetch("/api/categories");
-        const data = await response.json();
-        if (response.ok && data.success) {
-          setCategories(data.data);
+        const [categoriesRes, languagesRes] = await Promise.all([
+          fetch("/api/categories"),
+          fetch(`${process.env.NEXT_PUBLIC_JUDGE0_URL}/languages`),
+        ]);
+
+        const [categoriesData, languagesData] = await Promise.all([
+          categoriesRes.json(),
+          languagesRes.json(),
+        ]);
+
+        if (categoriesRes.ok && categoriesData?.success) {
+          setCategories(categoriesData.data);
         } else {
-          console.error("Failed to fetch categories:", data.message);
+          console.error("Failed to load categories:", categoriesData?.message);
+        }
+
+        if (languagesRes.ok && languagesData?.success) {
+          console.log({languagesData});
+          setLanguages(languagesData);
+        } else {
+          console.error("Failed to load languages:", languagesData?.message);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("Error fetching categories or languages:", error);
       }
     };
 
-    fetchCategories();
+    initialFetch();
   }, []);
 
   const handleProblemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       const response = await fetch("/api/problems", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(problemForm),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...problemForm,
+          timeLimit: Number(problemForm.timeLimit),
+          memoryLimit: Number(problemForm.memoryLimit),
+        }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) {
         toast.error(data.message || "Failed to create problem");
         return;
       }
-      console.log("Problem created successfully:", data);
       toast.success("Problem created successfully!");
-      // Reset form
       setProblemForm({
         title: "",
         description: "",
@@ -78,14 +111,14 @@ function CreateProblem() {
         memoryLimit: "",
         constraints: [],
         categoryId: "",
-        // sampleInput: "",
-        // sampleOutput: "",
+        solutionCode: "",
+        solutionLanguageId: "",
+        testCases: [],
       });
     } catch (error) {
       console.error("Error creating problem:", error);
       toast.error("Error creating problem");
-    } 
-
+    }
   };
 
   const addTag = () => {
@@ -122,6 +155,25 @@ function CreateProblem() {
     });
   };
 
+  const addTestCase = () => {
+    if (newTestCase.input.trim() && newTestCase.expectedOutput.trim()) {
+      setProblemForm({
+        ...problemForm,
+        testCases: [...problemForm.testCases, newTestCase],
+      });
+      setNewTestCase({ input: "", expectedOutput: "", isHidden: false });
+    } else {
+      toast.error("Please fill both input and expected output for test case");
+    }
+  };
+
+  const removeTestCase = (index: number) => {
+    setProblemForm({
+      ...problemForm,
+      testCases: problemForm.testCases.filter((_, i) => i !== index),
+    });
+  };
+
   return (
     <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 overflow-hidden">
       <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 p-8 border-b border-emerald-100">
@@ -144,6 +196,7 @@ function CreateProblem() {
         <form onSubmit={handleProblemSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
+              {/* Title */}
               <div className="space-y-3">
                 <Label
                   htmlFor="problemTitle"
@@ -163,12 +216,10 @@ function CreateProblem() {
                 />
               </div>
 
+              {/* Difficulty & Category */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="difficulty"
-                    className="text-sm font-semibold text-slate-700"
-                  >
+                  <Label className="text-sm font-semibold text-slate-700">
                     Difficulty *
                   </Label>
                   <Select
@@ -182,23 +233,14 @@ function CreateProblem() {
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-0 shadow-xl">
-                      <SelectItem value="Easy" className="rounded-lg">
-                        Easy
-                      </SelectItem>
-                      <SelectItem value="Medium" className="rounded-lg">
-                        Medium
-                      </SelectItem>
-                      <SelectItem value="Hard" className="rounded-lg">
-                        Hard
-                      </SelectItem>
+                      <SelectItem value="Easy">Easy</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Hard">Hard</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="category"
-                    className="text-sm font-semibold text-slate-700"
-                  >
+                  <Label className="text-sm font-semibold text-slate-700">
                     Category *
                   </Label>
                   <Select
@@ -213,7 +255,7 @@ function CreateProblem() {
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-0 shadow-xl">
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id} className="rounded-lg">
+                        <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
                       ))}
@@ -222,16 +264,11 @@ function CreateProblem() {
                 </div>
               </div>
 
+              {/* Time & Memory Limit */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="timeLimit"
-                    className="text-sm font-semibold text-slate-700"
-                  >
-                    Time Limit (seconds) *
-                  </Label>
+                  <Label>Time Limit (seconds) *</Label>
                   <Input
-                    id="timeLimit"
                     type="number"
                     placeholder="1"
                     value={problemForm.timeLimit}
@@ -246,14 +283,8 @@ function CreateProblem() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <Label
-                    htmlFor="memoryLimit"
-                    className="text-sm font-semibold text-slate-700"
-                  >
-                    Memory Limit (MB) *
-                  </Label>
+                  <Label>Memory Limit (MB) *</Label>
                   <Input
-                    id="memoryLimit"
                     type="number"
                     placeholder="256"
                     value={problemForm.memoryLimit}
@@ -271,25 +302,18 @@ function CreateProblem() {
 
               {/* Tags */}
               <div className="space-y-3">
-                <Label className="text-sm font-semibold text-slate-700">
-                  Tags
-                </Label>
+                <Label>Tags</Label>
                 <div className="flex space-x-2">
                   <Input
                     placeholder="Add a tag"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) =>
+                    onKeyUp={(e) =>
                       e.key === "Enter" && (e.preventDefault(), addTag())
                     }
                     className="h-12 border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
                   />
-                  <Button
-                    type="button"
-                    onClick={addTag}
-                    variant="outline"
-                    className="h-12 px-4 border-2 border-slate-200 bg-white hover:bg-slate-50 rounded-xl transition-all duration-200"
-                  >
+                  <Button type="button" onClick={addTag} variant="outline">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -301,146 +325,173 @@ function CreateProblem() {
                       className="bg-emerald-50 border-emerald-200 text-emerald-700 px-3 py-1"
                     >
                       {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-2 hover:text-red-600 transition-colors"
-                      >
-                        <X className="h-3 w-3" />
+                      <button type="button" onClick={() => removeTag(tag)}>
+                        <X className="h-3 w-3 ml-2" />
                       </button>
                     </Badge>
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-6">
+              {/* Constraints */}
               <div className="space-y-3">
-                <Label
-                  htmlFor="problemDescription"
-                  className="text-sm font-semibold text-slate-700"
-                >
-                  Problem Description *
-                </Label>
-                <Textarea
-                  id="problemDescription"
-                  placeholder="Describe the problem statement clearly and concisely..."
-                  className="min-h-[120px] border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200 resize-none"
-                  value={problemForm.description}
-                  onChange={(e) =>
-                    setProblemForm({
-                      ...problemForm,
-                      description: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-
-              {/* <div className="space-y-3">
-                <Label
-                  htmlFor="sampleInput"
-                  className="text-sm font-semibold text-slate-700"
-                >
-                  Sample Input *
-                </Label>
-                <Textarea
-                  id="sampleInput"
-                  placeholder="Provide sample input..."
-                  className="min-h-[80px] font-mono text-sm border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200 resize-none"
-                  value={problemForm.sampleInput}
-                  onChange={(e) =>
-                    setProblemForm({
-                      ...problemForm,
-                      sampleInput: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Label
-                  htmlFor="sampleOutput"
-                  className="text-sm font-semibold text-slate-700"
-                >
-                  Sample Output *
-                </Label>
-                <Textarea
-                  id="sampleOutput"
-                  placeholder="Provide expected output..."
-                  className="min-h-[80px] font-mono text-sm border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200 resize-none"
-                  value={problemForm.sampleOutput}
-                  onChange={(e) =>
-                    setProblemForm({
-                      ...problemForm,
-                      sampleOutput: e.target.value,
-                    })
-                  }
-                  required
-                />
-              </div> */}
-            </div>
-          </div>
-
-          {/* Constraints */}
-          <div className="space-y-4">
-            <Label className="text-sm font-semibold text-slate-700">
-              Constraints
-            </Label>
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Add a constraint"
-                value={newConstraint}
-                onChange={(e) => setNewConstraint(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addConstraint())
-                }
-                className="h-12 border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
-              />
-              <Button
-                type="button"
-                onClick={addConstraint}
-                variant="outline"
-                className="h-12 px-4 border-2 border-slate-200 bg-white hover:bg-slate-50 rounded-xl transition-all duration-200"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {problemForm.constraints.map((constraint, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200"
-                >
-                  <span className="text-sm text-slate-700">{constraint}</span>
-                  <button
+                <Label>Constraints</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Add a constraint"
+                    value={newConstraint}
+                    onChange={(e) => setNewConstraint(e.target.value)}
+                    onKeyUp={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addConstraint())
+                    }
+                    className="h-12 border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all duration-200"
+                  />
+                  <Button
                     type="button"
-                    onClick={() => removeConstraint(index)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
+                    onClick={addConstraint}
+                    variant="outline"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
+                <div className="space-y-2">
+                  {problemForm.constraints.map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200"
+                    >
+                      <span>{c}</span>
+                      <button
+                        onClick={() => removeConstraint(i)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Original Solution */}
+              <div className="space-y-3">
+                <Label>Original Solution *</Label>
+                <Select
+                  value={problemForm.solutionLanguageId}
+                  onValueChange={(value) =>
+                    setProblemForm({ ...problemForm, solutionLanguageId: value })
+                  }
+                  required
+                >
+                  <SelectTrigger className="h-12 border-0 bg-slate-50 rounded-xl">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-0 shadow-xl">
+                    {languages.map((lang) => (
+                      <SelectItem key={lang.id} value={lang.id.toString()}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <textarea
+                  value={problemForm.solutionCode}
+                  onChange={(e) =>
+                    setProblemForm({
+                      ...problemForm,
+                      solutionCode: e.target.value,
+                    })
+                  }
+                  placeholder="Write the solution here"
+                  className="w-full h-40 p-2 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Description */}
+              <div className="space-y-3">
+                <Label>Problem Description *</Label>
+                <MarkdownEditor
+                  content={problemForm.description}
+                  setContent={(value) =>
+                    setProblemForm({ ...problemForm, description: value })
+                  }
+                />
+              </div>
+
+              {/* Test Cases */}
+              <div className="space-y-3">
+                <Label>Test Cases</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Input"
+                    value={newTestCase.input}
+                    onChange={(e) =>
+                      setNewTestCase({ ...newTestCase, input: e.target.value })
+                    }
+                  />
+                  <Input
+                    placeholder="Expected Output"
+                    value={newTestCase.expectedOutput}
+                    onChange={(e) =>
+                      setNewTestCase({
+                        ...newTestCase,
+                        expectedOutput: e.target.value,
+                      })
+                    }
+                  />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={newTestCase.isHidden}
+                      onCheckedChange={(checked) =>
+                        setNewTestCase({ ...newTestCase, isHidden: !!checked })
+                      }
+                    />
+                    <span className="text-sm">Hidden</span>
+                    <Button
+                      type="button"
+                      onClick={addTestCase}
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mt-2">
+                  {problemForm.testCases.map((tc, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200"
+                    >
+                      <span className="text-sm">{`Input: ${
+                        tc.input
+                      } | Output: ${tc.expectedOutput} ${
+                        tc.isHidden ? "(Hidden)" : ""
+                      }`}</span>
+                      <button
+                        onClick={() => removeTestCase(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
+          {/* Submit */}
           <div className="flex space-x-4 pt-4">
             <Button
               type="submit"
-              className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              className="flex-1 h-12 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl"
             >
               <Save className="h-4 w-4 mr-2" />
               Create Problem
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 border-2 border-slate-200 bg-white hover:bg-slate-50 rounded-xl font-semibold transition-all duration-200"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
             </Button>
           </div>
         </form>

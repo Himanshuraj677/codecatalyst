@@ -35,58 +35,13 @@ import { useUser } from "@/hooks/useUser";
 import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
+import { MarkdownPreview } from "@/components/MarkdownEditor";
 
 // Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
 });
 
-const languageTemplates = {
-  python: `def solution():
-    # Write your solution here
-    pass
-
-# Test your solution
-if __name__ == "__main__":
-    result = solution()
-    print(result)`,
-  javascript: `function solution() {
-    // Write your solution here
-    
-}
-
-// Test your solution
-console.log(solution());`,
-  java: `public class Solution {
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        // Test your solution
-        System.out.println(sol.solution());
-    }
-    
-    public int solution() {
-        // Write your solution here
-        return 0;
-    }
-}`,
-  cpp: `#include <iostream>
-#include <vector>
-using namespace std;
-
-class Solution {
-public:
-    int solution() {
-        // Write your solution here
-        return 0;
-    }
-};
-
-int main() {
-    Solution sol;
-    cout << sol.solution() << endl;
-    return 0;
-}`,
-};
 
 export default function ProblemPage() {
   const { user, isLoading } = useUser();
@@ -105,24 +60,33 @@ export default function ProblemPage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("python");
   const [isRunning, setIsRunning] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [testResults, setTestResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("description");
 
   useEffect(() => {
+    const fetchProblemData = async () => {
+      setIsFetching(true);
+      try {
+        const [problemData, userSubmissionsData] = await Promise.all([
+          fetch(`/api/problems/${problemId}`).then((res) => res.json()),
+          fetch(`/api/submissions/${problemId}`).then((res) => res.json()),
+        ]);
+        console.log(problemData.data, userSubmissionsData.data);
+        setProblem(problemData.data);
+        setUserSubmissions(userSubmissionsData.data);
+      } catch (error) {
+        toast.error("Failed to fetch problem data");
+      } finally {
+        setIsFetching(false);
+      }
+    };
 
+    fetchProblemData();
   }, []);
 
-  useEffect(() => {
-    if (
-      language &&
-      languageTemplates[language as keyof typeof languageTemplates]
-    ) {
-      setCode(languageTemplates[language as keyof typeof languageTemplates]);
-    }
-  }, [language]);
-
-  if (!problem) {
+  if (!problem || isFetching) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -298,61 +262,13 @@ export default function ProblemPage() {
                         Problem Statement
                       </h3>
                       <div className="prose prose-slate max-w-none">
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-line">
-                          {problem.description}
-                        </p>
+                        <MarkdownPreview content={problem.description} />
                       </div>
                     </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Example</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium text-slate-900 mb-2">
-                            Input:
-                          </h4>
-                          <pre className="bg-slate-100 p-3 rounded-lg text-sm font-mono text-slate-800 overflow-x-auto">
-                            {problem.sampleInput}
-                          </pre>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-slate-900 mb-2">
-                            Output:
-                          </h4>
-                          <pre className="bg-slate-100 p-3 rounded-lg text-sm font-mono text-slate-800 overflow-x-auto">
-                            {problem.sampleOutput}
-                          </pre>
-                        </div>
-                        {problem.explanation && (
-                          <div>
-                            <h4 className="font-medium text-slate-900 mb-2">
-                              Explanation:
-                            </h4>
-                            <p className="text-slate-700">
-                              {problem.explanation}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">
-                        Constraints
-                      </h3>
-                      <ul className="space-y-1">
-                        {problem.constraints.map((constraint, index) => (
-                          <li key={index} className="text-slate-700 text-sm">
-                            • {constraint}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
                     <div>
                       <h3 className="text-lg font-semibold mb-3">Tags</h3>
                       <div className="flex flex-wrap gap-2">
-                        {problem.tags.map((tag) => (
+                        {problem.tags.map((tag: string) => (
                           <Badge
                             key={tag}
                             variant="outline"

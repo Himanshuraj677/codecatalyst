@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,10 +17,19 @@ export default function AssignmentsPage() {
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
-  const userSubmissions = getUserSubmissions(user!.id)
-  const submittedAssignmentIds = userSubmissions.map((s) => s.assignmentId)
 
-  const filteredAssignments = mockAssignments.filter((assignment) => {
+const userSubmissions = useMemo(() => {
+  if (!user) return []
+  return getUserSubmissions(user.id)
+}, [user])
+
+const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignmentId), [userSubmissions])
+
+
+  const filteredAssignments = useMemo(() => {
+  return mockAssignments.filter((assignment) => {
+    if (!user) return false // optional guard
+
     const matchesSearch =
       assignment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       assignment.courseName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -36,6 +45,8 @@ export default function AssignmentsPage() {
 
     return matchesSearch && matchesDifficulty && matchesStatus
   })
+}, [searchTerm, difficultyFilter, statusFilter, submittedAssignmentIds, user])
+
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {

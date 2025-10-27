@@ -15,7 +15,8 @@ export function MarkdownEditor({
       <MDEditor
         value={content}
         onChange={handleChange}
-        height={400} // optional: adjust editor height
+        height={400}
+        preview="edit"
       />
     </div>
   );

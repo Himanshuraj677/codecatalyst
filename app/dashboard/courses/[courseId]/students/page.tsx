@@ -17,7 +17,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Users, UserPlus, Mail, Search, MoreHorizontal, Trash2, Send } from "lucide-react"
-import { useAuth } from "@/components/auth-provider"
+import { useUser } from "@/hooks/useUser"
 import { mockCourses } from "@/lib/mock-data"
 import { useParams } from "next/navigation"
 import { toast } from "react-toastify"
@@ -58,7 +58,7 @@ const mockEnrolledStudents = [
 ]
 
 export default function CourseStudentsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const params = useParams()
   const courseId = params.courseId as string
 

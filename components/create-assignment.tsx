@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
 import Calendar from "react-calendar";
+import { MarkdownEditor } from "./MarkdownEditor";
 
 const CreateAssignment = ({ user }: { user: User }) => {
   const [problemSearch, setProblemSearch] = useState("");
@@ -279,18 +280,11 @@ const CreateAssignment = ({ user }: { user: User }) => {
                 >
                   Assignment Description *
                 </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe the assignment objectives, learning outcomes, and requirements..."
-                  className="min-h-[200px] border-0 bg-slate-50 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all duration-200 resize-none"
-                  value={assignmentForm.description}
-                  onChange={(e) =>
-                    setAssignmentForm({
-                      ...assignmentForm,
-                      description: e.target.value,
-                    })
+                <MarkdownEditor
+                  content={assignmentForm.description}
+                  setContent={(value) =>
+                    setAssignmentForm({ ...assignmentForm, description: value })
                   }
-                  required
                 />
               </div>
             </div>

@@ -1,46 +1,62 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Eye, EyeOff, ArrowRight, Code2, Users, Award } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
-import { toast } from "react-toastify"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  BookOpen,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Code2,
+  Users,
+  Award,
+} from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const searchParams = useSearchParams();
-  const callbackURL = searchParams.get("callbackUrl") || "/dashboard";
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: { callbackUrl?: string };
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const callbackURL =
+    searchParams.callbackUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const {data, error} = await authClient.signIn.email({
+      const { data, error } = await authClient.signIn.email({
         email,
         password,
-        callbackURL
+        callbackURL,
       });
       if (error) {
         toast.error(error.message);
       }
     } catch (error) {
-      console.error("Login failed:", error)
+      console.error("Login failed:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 flex">
@@ -64,22 +80,32 @@ export default function LoginPage() {
               at a Time
             </h1>
             <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-              Join thousands of students and educators in our comprehensive coding platform. Practice, learn, and excel
-              in programming.
+              Join thousands of students and educators in our comprehensive
+              coding platform. Practice, learn, and excel in programming.
             </p>
           </div>
 
           <div className="grid grid-cols-3 gap-6">
             {[
-              { icon: Code2, label: "500+ Problems", desc: "Curated challenges" },
+              {
+                icon: Code2,
+                label: "500+ Problems",
+                desc: "Curated challenges",
+              },
               { icon: Users, label: "10k+ Students", desc: "Active community" },
-              { icon: Award, label: "Expert Teachers", desc: "Industry professionals" },
+              {
+                icon: Award,
+                label: "Expert Teachers",
+                desc: "Industry professionals",
+              },
             ].map((feature, index) => (
               <div key={index} className="text-center">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <feature.icon className="h-6 w-6 text-white" />
                 </div>
-                <div className="text-lg font-semibold mb-1">{feature.label}</div>
+                <div className="text-lg font-semibold mb-1">
+                  {feature.label}
+                </div>
                 <div className="text-sm text-blue-200">{feature.desc}</div>
               </div>
             ))}
@@ -107,7 +133,9 @@ export default function LoginPage() {
 
           <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/80 backdrop-blur-sm">
             <CardHeader className="text-center pb-8">
-              <CardTitle className="text-3xl font-bold text-slate-900 mb-2">Welcome back</CardTitle>
+              <CardTitle className="text-3xl font-bold text-slate-900 mb-2">
+                Welcome back
+              </CardTitle>
               <CardDescription className="text-lg text-slate-600">
                 Sign in to continue your coding journey
               </CardDescription>
@@ -115,7 +143,10 @@ export default function LoginPage() {
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Email Address
                   </Label>
                   <Input
@@ -129,7 +160,10 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Password
                   </Label>
                   <div className="relative">
@@ -160,12 +194,19 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center space-x-2">
-                    <input type="checkbox" id="remember" className="rounded border-slate-300" />
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="rounded border-slate-300"
+                    />
                     <label htmlFor="remember" className="text-slate-600">
                       Remember me
                     </label>
                   </div>
-                  <Link href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+                  <Link
+                    href="#"
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -191,7 +232,10 @@ export default function LoginPage() {
 
               <div className="text-center">
                 <span className="text-slate-600">Don't have an account? </span>
-                <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                <Link
+                  href="/register"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
                   Create account
                 </Link>
               </div>
@@ -200,5 +244,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

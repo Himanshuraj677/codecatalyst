@@ -12,12 +12,12 @@ import CreateAssignment from "@/components/create-assignment";
 
 export default function CreatePage() {
   const { user, isLoading } = useUser();
+  const [activeTab, setActiveTab] = useState("assignment");
 
   if (isLoading) {
     return <div className="">I am Loading</div>;
   }
 
-  const [activeTab, setActiveTab] = useState("assignment");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
