@@ -27,9 +27,6 @@ import {
   Filter,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  mockProblems,
-} from "@/lib/mock-data";
 import { useUser } from "@/hooks/useUser";
 import { toast } from "react-toastify";
 
@@ -40,7 +37,7 @@ export default function ProblemSetPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [problems, setProblems] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
@@ -444,7 +441,7 @@ export default function ProblemSetPage() {
           <TabsContent value="categories">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map((category) => {
-                const categoryProblems = mockProblems.filter(
+                const categoryProblems = problems.filter(
                   (p) => p.category === category
                 );
                 const solvedInCategory = 50; // Mocked value Should be derived from user data
@@ -453,7 +450,7 @@ export default function ProblemSetPage() {
 
                 return (
                   <div
-                    key={category}
+                    key={category.id}
                     className="group bg-white rounded-2xl border border-slate-200/60 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                   >
                     <div className="p-6">
@@ -470,7 +467,7 @@ export default function ProblemSetPage() {
                       </div>
 
                       <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
-                        {category}
+                        {category.name}
                       </h3>
 
                       <p className="text-sm text-slate-600 mb-4">
@@ -495,7 +492,7 @@ export default function ProblemSetPage() {
                       <Button
                         variant="outline"
                         className="w-full border-slate-200 hover:bg-slate-50 rounded-xl group-hover:border-indigo-300 group-hover:text-indigo-600 bg-transparent"
-                        onClick={() => setCategoryFilter(category)}
+                        onClick={() => setCategoryFilter(category.name)}
                       >
                         View Problems
                       </Button>
