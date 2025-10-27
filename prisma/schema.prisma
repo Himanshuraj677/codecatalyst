@@ -209,6 +209,7 @@ model Submission {
   plagiarismScore Float?
   plagiarizedFrom String?
   judge0Token     String?
+  judge0Tokens    Json?
   judge0Result    Json?
   submittedAt     DateTime         @default(now())
   createdAt       DateTime         @default(now())
