@@ -16,42 +16,31 @@ export default function JoinCoursePage() {
   const { user } = useUser()
   const router = useRouter()
   const [joinCode, setJoinCode] = useState("")
-  const [foundCourse, setFoundCourse] = useState<any>(null)
-  const [isSearching, setIsSearching] = useState(false)
+  const [isFetching, setIsFetching] = useState(false)
 
-  const handleSearchCourse = () => {
-    if (!joinCode.trim()) {
-      toast.error("Please enter a join code")
-      return
-    }
+  const handleJoinCourse = async () => {
+    try {
+      setIsFetching(true);
+      const response = await fetch(`/api/courses/enrollments?joinCode=${joinCode}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    setIsSearching(true)
+      const data = await response.json();
 
-    // Simulate API call
-    setTimeout(() => {
-      const course = mockCourses.find((c) => c.joinCode.toLowerCase() === joinCode.toLowerCase())
-
-      if (course) {
-        setFoundCourse(course)
-        toast.success("Course found!")
+      if (data.success) {
+        toast.success("Successfully joined the course!");
+        router.push(`/dashboard/courses/${data.data.id}`);
       } else {
-        setFoundCourse(null)
-        toast.error("Course not found. Please check the join code.")
+        toast.error(data.message);
       }
-      setIsSearching(false)
-    }, 1000)
-  }
-
-  const handleJoinCourse = () => {
-    if (!foundCourse) return
-
-    console.log("Joining course:", foundCourse.id)
-    toast.success(`Successfully joined ${foundCourse.name}!`)
-
-    // Redirect to the course page
-    setTimeout(() => {
-      router.push(`/dashboard/courses/${foundCourse.id}`)
-    }, 1500)
+    } catch (error) {
+      toast.error("An error occurred while joining the course.");
+    } finally {
+      setIsFetching(false);
+    }
   }
 
   return (
@@ -82,75 +71,13 @@ export default function JoinCoursePage() {
                   onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                   className="flex-1"
                 />
-                <Button onClick={handleSearchCourse} disabled={isSearching}>
-                  {isSearching ? "Searching..." : "Find Course"}
+                <Button onClick={handleJoinCourse} disabled={isFetching}>
+                  {isFetching ? "Searching..." : "Join Course"}
                 </Button>
               </div>
             </div>
-
-            {/* Available Courses for Demo */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Demo Join Codes:</h4>
-              <div className="flex flex-wrap gap-2">
-                {mockCourses.map((course) => (
-                  <Button
-                    key={course.id}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setJoinCode(course.joinCode)}
-                    className="text-xs"
-                  >
-                    {course.joinCode}
-                  </Button>
-                ))}
-              </div>
-              <p className="text-sm text-blue-800 mt-2">Click any code above to try joining that course</p>
-            </div>
           </CardContent>
         </Card>
-
-        {/* Course Preview */}
-        {foundCourse && (
-          <Card className="border-green-200 bg-green-50">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-green-800">
-                <BookOpen className="h-5 w-5" />
-                <span>Course Found!</span>
-              </CardTitle>
-              <CardDescription className="text-green-700">Review the course details before joining</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-xl font-bold text-green-900">{foundCourse.name}</h3>
-                <p className="text-green-800 mt-1">{foundCourse.description}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-green-600" />
-                  <span className="text-green-800">{foundCourse.studentCount} students</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                  <span className="text-green-800">Created {new Date(foundCourse.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <BookOpen className="h-4 w-4 text-green-600" />
-                  <span className="text-green-800">Instructor: {foundCourse.instructor}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Badge className="bg-green-100 text-green-800">Join Code: {foundCourse.joinCode}</Badge>
-              </div>
-
-              <Button onClick={handleJoinCourse} className="w-full bg-green-600 hover:bg-green-700">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Join This Course
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Help Section */}
         <Card>
