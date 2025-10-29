@@ -23,7 +23,6 @@ export default function CoursesPage() {
   
 
   const [searchTerm, setSearchTerm] = useState("");
-  // const courses = getUserCourses(user!.id, user!.role)
   useEffect(() => {
     const controller = new AbortController();
     const fetchCourses = async () => {

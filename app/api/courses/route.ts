@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-    const instructorId = checkAccess.user.id;
+    const userId = checkAccess.user.id;
     const course = await prisma.course.create({
       data: {
         name,
         description,
-        instructorId,
+        userId,
         joinCode,
       },
     });
@@ -53,39 +53,65 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const checkAccess = await checkRoleBasedAccess({ req });
+
     if (!checkAccess.hasAccess || !checkAccess.user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized", message: checkAccess.message },
+        {
+          success: false,
+          error: "Unauthorized",
+          message: checkAccess.message ?? "Access denied",
+        },
         { status: 401 }
       );
     }
-    const instructorId = checkAccess.user.id;
-    const courses = await prisma.course.findMany({
-      where: {
-        instructorId,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        joinCode: true,
-        createdAt: true,
-        instructor: {
-          select: {
-            name: true,
+
+    const userId = checkAccess.user.id;
+    const userRole = checkAccess.user.role;
+
+    let rawCourses: any[] = [];
+
+    if (userRole === "user") {
+      const enrollments = await prisma.enrollment.findMany({
+        where: { studentId: userId },
+        select: {
+          course: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              joinCode: true,
+              createdAt: true,
+              instructor: { select: { name: true } },
+              _count: { select: { enrollments: true } },
+            },
           },
         },
-        _count: {
-          select: { enrollments: true },
-        },
-      },
-    });
+      });
 
-    const formattedCourses = courses.map((course) => ({
-      ...course,
-      studentCount: course._count.enrollments,
-      instructor: course.instructor.name,
-      _count: undefined, 
+      rawCourses = enrollments.map((e) => e.course);
+    } else {
+      rawCourses = await prisma.course.findMany({
+        where: { instructorId: userId },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          joinCode: true,
+          createdAt: true,
+          instructor: { select: { name: true } },
+          _count: { select: { enrollments: true } },
+        },
+      });
+    }
+
+    const formattedCourses = rawCourses.map((course) => ({
+      id: course.id,
+      name: course.name,
+      description: course.description,
+      joinCode: course.joinCode,
+      createdAt: course.createdAt,
+      instructor: course.instructor?.name ?? "Unknown",
+      studentCount: course._count?.enrollments ?? 0,
     }));
 
     return NextResponse.json(
@@ -97,13 +123,15 @@ export async function GET(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
+    console.error("Error fetching courses:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Something unknown occured",
+        error: "Internal Server Error",
         message: "Unable to fetch course",
       },
       { status: 500 }
     );
   }
 }
+
