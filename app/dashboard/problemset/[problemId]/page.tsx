@@ -15,6 +15,7 @@ import Header from "@/components/create-problem/page-header";
 import EditorHeader from "@/components/create-problem/editor-header";
 import LeftPanel from "@/components/create-problem/LeftPanel";
 import RightLowerPanel from "@/components/create-problem/RightLowerPanel";
+import { exec } from "child_process";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -112,26 +113,32 @@ export default function ProblemPage() {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-
-    // Mock submission
-    setTimeout(() => {
-      const results = [
-        "Accepted",
-        "Wrong Answer",
-        "Time Limit Exceeded",
-        "Runtime Error",
-      ];
-      const result = results[Math.floor(Math.random() * results.length)];
-
-      setIsSubmitting(false);
-
-      if (result === "Accepted") {
-        toast.success("Solution Accepted! 🎉");
-      } else {
-        toast.error(`${result} - Try again!`);
+    try {
+      setIsSubmitting(true);
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, languageId, problemId }),
+      });
+      if (!res.ok) {
+        toast.error("Submission failed");
+        return;
       }
-    }, 3000);
+      const result = await res.json();
+      if (result.summary.status === "Accepted") {
+        toast.success(`Submission successful - All test cases passed!`);
+      } else {
+        toast.error(`${result.summary.status} - Try again!`);
+      }
+      setUserSubmissions((prev) => [
+        ...prev,
+        { id: result.summary.submissionId, status: result.summary.status, problemId, languageId, executionTime: result.summary.totalTime, memoryUsed: result.summary.totalMemory, createdAt: result.summary.createdAt },
+      ]);
+    } catch (error) {
+      toast.error("Submission failed");
+    } finally {
+      setIsSubmitting(false); 
+    }
   };
 
   const isSolved = userSubmissions.some((s) => s.status === "Accepted");

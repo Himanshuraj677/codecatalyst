@@ -22,7 +22,8 @@ export async function GET(
                 languageId: true,
                 status: true,
                 executionTime: true,
-                memoryUsed: true
+                memoryUsed: true,
+                createdAt: true
             }
         })
         return NextResponse.json({success: true, message: "Submissions fetched", data: submissions});
@@ -30,27 +31,5 @@ export async function GET(
        return handleApiError(error); 
     }
 }
-
-
-
-
-// id: string;
-// problemId: string;
-// assignmentId: string | null;
-// studentId: string;
-// language: string;
-// code: string;
-// status: $Enums.SubmissionStatus;
-// score: number | null;
-// feedback: string | null;
-// testCasesPassed: number | null;
-// totalTestCases: number | null;
-// executionTime: number | null;
-// memoryUsed: number | null;
-// plagiarismScore: number | null;
-// plagiarizedFrom: string | null;
-// judge0Token: string | null;
-// judge0Result: JsonValue | null;
-// submittedAt: Date;
 
 

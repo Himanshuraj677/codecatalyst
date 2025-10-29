@@ -106,6 +106,7 @@ enum SubmissionStatus {
   Pending
   CompilationError
   Plagarized
+  PartiallyCorrect
 }
 
 model Course {

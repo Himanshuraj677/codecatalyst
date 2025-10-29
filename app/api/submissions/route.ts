@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { submitBatch, pollResults } from "@/lib/judge0";
 import { prisma } from "@/lib/db";
 import checkRoleBasedAccess from "@/lib/checkRoleAccess";
+import { SubmissionStatus } from "@prisma/client";
 
 type TestCase = { input: string };
 
@@ -94,13 +95,38 @@ export async function POST(req: NextRequest) {
     );
     const totalMemory = compared.reduce((acc, cur) => acc + cur.memory, 0);
 
+    let finalStatus = "Accepted";
+
+    // Check for compilation or runtime errors
+    const hasCompileError = userResults.some(
+      (r) => r.status?.description === "Compilation Error"
+    );
+    const hasRuntimeError = userResults.some(
+      (r) =>
+        r.status?.description === "Runtime Error" ||
+        r.stderr ||
+        r.status?.description === "Time Limit Exceeded"
+    );
+
+    if (hasCompileError) {
+      finalStatus = "CompilationError";
+    } else if (hasRuntimeError) {
+      finalStatus = "RuntimeError";
+    } else if (passedCount === totalCount) {
+      finalStatus = "Accepted";
+    } else if (passedCount > 0) {
+      finalStatus = "PartiallyCorrect";
+    } else {
+      finalStatus = "WrongAnswer";
+    }
+
     const submissions = await prisma.submission.create({
       data: {
         problemId,
         studentId: userId,
         languageId,
         code,
-        status: "Accepted",
+        status: finalStatus as SubmissionStatus,
         testCasesPassed: passedCount,
         totalTestCases: totalCount,
         executionTime: totalTime,
@@ -114,11 +140,14 @@ export async function POST(req: NextRequest) {
       success: true,
       results: compared,
       summary: {
+        submissionId: submissions.id,
         passedCount,
         totalCount,
         percentagePassed: `${percentagePassed}%`,
+        status: finalStatus,
         totalTime: totalTime.toFixed(3) + "s",
         totalMemory: totalMemory + " KB",
+        createdAt: submissions.createdAt
       },
     });
   } catch (error) {

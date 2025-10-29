@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileText,
@@ -23,7 +23,7 @@ const LeftPanel = ({ problem, userSubmissions }: LeftPanelProps) => {
     switch (status) {
       case "Accepted":
         return "text-green-600";
-      case "Wrong Answer":
+      case "WrongAnswer":
         return "text-red-600";
       case "Pending":
         return "text-yellow-600";
@@ -32,7 +32,13 @@ const LeftPanel = ({ problem, userSubmissions }: LeftPanelProps) => {
     }
   };
 
+  
   const [activeTab, setActiveTab] = useState<string>("description");
+  
+  useEffect(() => {
+    setActiveTab("submissions");
+  }, [userSubmissions]);
+
   return (
     <div className="h-full bg-white border-r border-slate-200">
       <Tabs
@@ -91,7 +97,7 @@ const LeftPanel = ({ problem, userSubmissions }: LeftPanelProps) => {
                       <div className="flex items-center space-x-2">
                         {submission.status === "Accepted" ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : submission.status === "Wrong Answer" ? (
+                        ) : submission.status === "WrongAnswer" ? (
                           <XCircle className="h-4 w-4 text-red-600" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -109,7 +115,7 @@ const LeftPanel = ({ problem, userSubmissions }: LeftPanelProps) => {
                     <div className="text-sm text-slate-600">
                       <p>
                         Submitted{" "}
-                        {new Date(submission.submittedAt).toLocaleString()}
+                        {new Date(submission.createdAt).toLocaleString()}
                       </p>
                       {submission.executionTime && (
                         <p>
