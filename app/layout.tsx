@@ -8,7 +8,7 @@ import { UserProvider } from "./context/userContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "CodeCampus - College Coding Platform",
+  title: "CodeCatalyst - College Coding Platform",
   description: "A modern coding assignment platform for colleges",
 }
 

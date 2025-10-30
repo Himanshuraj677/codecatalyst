@@ -63,7 +63,7 @@ export default function RegisterPage() {
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
-              <span className="text-3xl font-bold">CodeCampus</span>
+              <span className="text-3xl font-bold">CodeCatalyst</span>
             </div>
             <h1 className="text-5xl font-bold mb-6 leading-tight">
               Start Your
@@ -125,7 +125,7 @@ export default function RegisterPage() {
               <BookOpen className="h-5 w-5 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              CodeCampus
+              CodeCatalyst
             </span>
           </div>
 
