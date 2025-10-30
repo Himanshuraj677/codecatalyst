@@ -32,7 +32,7 @@ export default function JoinCoursePage() {
 
       if (data.success) {
         toast.success("Successfully joined the course!");
-        router.push(`/dashboard/courses/${data.data.id}`);
+        router.push(`/dashboard/courses/${data.data.courseId}`);
       } else {
         toast.error(data.message);
       }
