@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         description,
-        userId,
+        instructorId: userId,
         joinCode,
       },
     });
