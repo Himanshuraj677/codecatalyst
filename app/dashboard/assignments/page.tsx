@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,14 +10,39 @@ import { Clock, Search, BookOpen, Calendar } from "lucide-react"
 import Link from "next/link"
 import { mockAssignments, getUserSubmissions } from "@/lib/mock-data"
 import { useUser } from "@/hooks/useUser"
+import { toast } from "react-toastify"
 
 export default function AssignmentsPage() {
-  const { user } = useUser()
+  const { user, isLoading } = useUser()
   const [searchTerm, setSearchTerm] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [isFetching, setIsFetching] = useState(false)
+  const [assignments, setAssignments] = useState<any[]>([])
 
-
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsFetching(true)
+        const response = await fetch("/api/assignments")
+        const data = await response.json();
+        if (!data.success || !response.ok) {
+          toast.error(data.message);
+        }
+        setAssignments(data.data); 
+      } catch (error) {
+        let errorMessage = "An error occurred while fetching data."
+        if (error instanceof Error) {
+          errorMessage = error.message
+        }
+        toast.error(errorMessage);
+      }
+      finally {
+        setIsFetching(false)
+      }
+    }
+    fetchData()
+  }, [])
 const userSubmissions = useMemo(() => {
   if (!user) return []
   return getUserSubmissions(user.id)
@@ -81,6 +106,10 @@ const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignme
     }
   }
 
+  if (isLoading || isFetching) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -126,13 +155,13 @@ const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignme
 
       {/* Assignments Grid */}
       <div className="grid gap-4">
-        {filteredAssignments.map((assignment) => {
-          const status = getAssignmentStatus(assignment.id)
-          const isOverdue = new Date(assignment.dueDate) < new Date() && status === "Not Submitted"
+        {assignments.map((assignment) => {
+          // const status = getAssignmentStatus(assignment.id)
+          const isOverdue = new Date(assignment.dueDate) < new Date()
 
           return (
             <Card
-              key={assignment.id}
+              key={assignment.course.id}
               className={`hover:shadow-md transition-shadow ${isOverdue ? "border-red-200" : ""}`}
             >
               <CardHeader>
@@ -151,13 +180,13 @@ const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignme
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
-                        <span>{assignment.timeLimit} min</span>
+                        <span>{assignment?.timeLimit || 0} min</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end space-y-2">
-                    <Badge className={getDifficultyColor(assignment.difficulty)}>{assignment.difficulty}</Badge>
-                    <Badge className={getStatusColor(status)}>{status}</Badge>
+                    <Badge className={getDifficultyColor(assignment.difficulty)}>{assignment?.difficulty || "Unknown"}</Badge>
+                    {/* <Badge className={getStatusColor(status)}>{status}</Badge> */}
                   </div>
                 </div>
               </CardHeader>
@@ -167,7 +196,8 @@ const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignme
                     {isOverdue && <span className="text-red-600 font-medium">⚠️ Overdue</span>}
                   </div>
                   <Link href={`/dashboard/courses/${assignment.courseId}/assignments/${assignment.id}`}>
-                    <Button>{status === "Not Submitted" ? "Start Assignment" : "View Submission"}</Button>
+                    {/* <Button>{status === "Not Submitted" ? "Start Assignment" : "View Submission"}</Button> */}
+                    <Button>View Assignment</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -176,7 +206,7 @@ const submittedAssignmentIds = useMemo(() => userSubmissions.map(s => s.assignme
         })}
       </div>
 
-      {filteredAssignments.length === 0 && (
+      {assignments.length === 0 && (
         <div className="text-center py-12">
           <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>

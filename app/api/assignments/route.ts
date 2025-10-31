@@ -48,3 +48,82 @@ export async function POST(req: NextRequest) {
     return handleApiError(error, "Failed to create assignment");
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const checkAccess = await checkRoleBasedAccess({ req });
+    if (!checkAccess.hasAccess || !checkAccess.user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const user = checkAccess.user;
+    const { searchParams } = new URL(req.url);
+    const courseId = searchParams.get("courseId");
+
+    let assignments;
+
+    if (user.role === "user") {
+      // Get enrolled courses
+      const enrollments = await prisma.enrollment.findMany({
+        where: { studentId: user.id },
+        select: { courseId: true },
+      });
+
+      const enrolledCourseIds = enrollments.map((e) => e.courseId);
+
+      if (courseId) {
+        // Ensure student is enrolled in the course
+        if (!enrolledCourseIds.includes(courseId)) {
+          return NextResponse.json(
+            { success: false, message: "Not enrolled in this course" },
+            { status: 403 }
+          );
+        }
+
+        assignments = await prisma.assignment.findMany({
+          where: { courseId },
+          orderBy: { createdAt: "desc" },
+          include: {
+            course: { select: { id: true, name: true } }, // ✅ Include course name
+          },
+        });
+      } else {
+        assignments = await prisma.assignment.findMany({
+          where: { courseId: { in: enrolledCourseIds } },
+          orderBy: { createdAt: "desc" },
+          include: {
+            course: { select: { id: true, name: true } }, // ✅ Include course name
+          },
+        });
+      }
+    } else if (user.role === "teacher") {
+      assignments = await prisma.assignment.findMany({
+        where: courseId ? { courseId } : {},
+        orderBy: { createdAt: "desc" },
+        include: {
+          course: { select: { id: true, name: true } }, // ✅ Include course name
+        },
+      });
+    } else {
+      return NextResponse.json(
+        { success: false, message: "Invalid user role" },
+        { status: 403 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Assignments fetched successfully",
+      data: assignments.map((a) => ({
+        ...a,
+        courseName: a.course?.name ?? "Unknown",
+      })), // ✅ Flatten course name into top-level field
+    });
+  } catch (error) {
+    console.error("Error fetching assignments:", error);
+    return handleApiError(error, "Failed to fetch assignments");
+  }
+}

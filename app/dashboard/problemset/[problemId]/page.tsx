@@ -7,7 +7,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useUser } from "@/hooks/useUser";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 import dynamic from "next/dynamic";
 import { judge0ToMonaco } from "@/lib/judge0-to-monaco";
@@ -15,7 +15,6 @@ import Header from "@/components/create-problem/page-header";
 import EditorHeader from "@/components/create-problem/editor-header";
 import LeftPanel from "@/components/create-problem/LeftPanel";
 import RightLowerPanel from "@/components/create-problem/RightLowerPanel";
-import { exec } from "child_process";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -27,6 +26,8 @@ export default function ProblemPage() {
   const [userSubmissions, setUserSubmissions] = useState<any[]>([]);
 
   const params = useParams();
+  const searchParams = useSearchParams();
+  const assignmentId = searchParams.get("assignmentId");
   const problemId = params.problemId as string;
   const editorRef = useRef<any>(null);
 
@@ -115,10 +116,14 @@ export default function ProblemPage() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+      const payload: any = { code, languageId, problemId };
+      if (assignmentId) {
+        payload.assignmentId = assignmentId;
+      }
       const res = await fetch("/api/submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, languageId, problemId }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         toast.error("Submission failed");

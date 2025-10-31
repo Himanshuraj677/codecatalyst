@@ -464,7 +464,7 @@ export default function AssignmentPage() {
                       </div>
                       <div className="ml-4">
                         <Link
-                          href={`/dashboard/problemset/${problem.id}?assignment=${assignmentId}`}
+                          href={`/dashboard/problemset/${problem.id}?assignmentId=${assignmentId}`}
                         >
                           <Button
                             className={

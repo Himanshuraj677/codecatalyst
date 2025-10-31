@@ -4,24 +4,36 @@ import { prisma } from "@/lib/db";
 import checkRoleBasedAccess from "@/lib/checkRoleAccess";
 import { SubmissionStatus } from "@prisma/client";
 
-type TestCase = { input: string };
-
 type RequestBody = {
   code: string;
   languageId: number;
   problemId: string;
+  assignmentId?: string;
 };
-
 
 export async function POST(req: NextRequest) {
   try {
-    const { code, languageId, problemId }: RequestBody = await req.json();
-
+    const body: RequestBody = await req.json();
+    const { code, languageId, problemId}: RequestBody = body;
+    const assignmentId = body.assignmentId || undefined;
+    console.log(`Assignment ID: ${assignmentId}`);
     if (!code || !languageId || !problemId) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
+    const [checkAccess, codeAndCase] = await Promise.all([
+      checkRoleBasedAccess({ req }),
+      prisma.problem.findUnique({
+        where: { id: problemId },
+        select: {
+          teacherSolutionLanguageId: true,
+          teacherSolution: true,
+          testCases: {
+            select: { input: true },
+          },
+        },
+      }),
+    ]);
 
-    const checkAccess = await checkRoleBasedAccess({ req });
     if (!checkAccess.hasAccess || !checkAccess.user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized", message: checkAccess.message },
@@ -30,21 +42,26 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = checkAccess.user.id;
-    const codeAndCase = await prisma.problem.findUnique({
-      where: { id: problemId },
-      select: {
-        teacherSolutionLanguageId: true,
-        teacherSolution: true,
-        testCases: {
-          select: { input: true },
-        },
-      },
-    });
     if (!codeAndCase) {
       return NextResponse.json(
         { success: false, message: "Unable to find problem" },
         { status: 404 }
       );
+    }
+
+    if (assignmentId) {
+      const assignmentProblem = await prisma.assignmentProblem.findFirst({
+        where: {
+          assignmentId,
+          problemId,
+        },
+      });
+      if (!assignmentProblem) {
+        return NextResponse.json(
+          { success: false, message: "Problem not part of the assignment" },
+          { status: 403 }
+        );
+      }
     }
     const correct = {
       languageId: codeAndCase?.teacherSolutionLanguageId,
@@ -120,20 +137,26 @@ export async function POST(req: NextRequest) {
       finalStatus = "WrongAnswer";
     }
 
+    const payloadSubmission: any = {
+      problemId,
+      studentId: userId,
+      languageId,
+      code,
+      status: finalStatus as SubmissionStatus,
+      testCasesPassed: passedCount,
+      totalTestCases: totalCount,
+      executionTime: totalTime,
+      memoryUsed: totalMemory,
+      judge0Tokens: { userTokens },
+      judge0Result: { userResults },
+    };
+
+    if (assignmentId) {
+      payloadSubmission.assignmentId = assignmentId;
+    }
+
     const submissions = await prisma.submission.create({
-      data: {
-        problemId,
-        studentId: userId,
-        languageId,
-        code,
-        status: finalStatus as SubmissionStatus,
-        testCasesPassed: passedCount,
-        totalTestCases: totalCount,
-        executionTime: totalTime,
-        memoryUsed: totalMemory,
-        judge0Tokens: { userTokens },
-        judge0Result: { userResults },
-      },
+      data: payloadSubmission,
     });
 
     return NextResponse.json({
@@ -147,7 +170,7 @@ export async function POST(req: NextRequest) {
         status: finalStatus,
         totalTime: totalTime.toFixed(3) + "s",
         totalMemory: totalMemory + " KB",
-        createdAt: submissions.createdAt
+        createdAt: submissions.createdAt,
       },
     });
   } catch (error) {
