@@ -9,6 +9,7 @@ import { Textarea } from "./ui/textarea";
 import { User } from "@/app/context/userContext";
 import { toast } from "react-toastify";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { generateJoinCode } from "@/lib/generateJoinCode";
 
 function CreateCourse({ user }: { user: User }) {
   const [courseForm, setCourseForm] = useState({
@@ -48,8 +49,8 @@ function CreateCourse({ user }: { user: User }) {
     }
   };
 
-  const generateJoinCode = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const generateNewJoinCode = () => {
+    const code = generateJoinCode();
     setCourseForm({ ...courseForm, joinCode: code });
   };
   return (
@@ -112,7 +113,7 @@ function CreateCourse({ user }: { user: User }) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={generateJoinCode}
+                    onClick={generateNewJoinCode}
                     className="h-12 px-4 border-2 border-slate-200 bg-white hover:bg-slate-50 rounded-xl font-semibold transition-all duration-200"
                   >
                     Generate

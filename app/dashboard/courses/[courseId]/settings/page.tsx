@@ -22,7 +22,7 @@ import {
   Users,
   AlertTriangle,
 } from "lucide-react";
-import { mockCourses } from "@/lib/mock-data";
+import {generateJoinCode} from "@/lib/generateJoinCode";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useUser } from "@/hooks/useUser";
@@ -89,15 +89,7 @@ export default function CourseSettingsPage() {
   };
 
   const generateNewJoinCode = () => {
-  // Generate 3 random uppercase letters
-  const letters = Array.from({ length: 3 }, () =>
-    String.fromCharCode(65 + Math.floor(Math.random() * 26))
-  ).join("");
-
-  // Generate 4 random digits
-  const numbers = Math.floor(1000 + Math.random() * 9000); // ensures 4 digits
-
-  const newCode = `${letters}${numbers}`;
+  const newCode = generateJoinCode();
 
   setCourseForm((prev) => ({ ...prev, joinCode: newCode }));
   toast.success("New join code generated!");
