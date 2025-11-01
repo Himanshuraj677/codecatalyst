@@ -5,7 +5,6 @@ import { BookOpen, Eye, Save, Users } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 import { User } from "@/app/context/userContext";
 import { toast } from "react-toastify";
 import { MarkdownEditor } from "./MarkdownEditor";

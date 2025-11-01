@@ -18,5 +18,6 @@ export default function DashboardPage() {
     return <TeacherDashboard user={user} />
   }
 
-  if (user?.role === "user")return <StudentDashboard user={user}/>
+  if (user?.role === "user") return <StudentDashboard user={user} />;
+  return <div className="p-6">Unauthorized</div>;
 }

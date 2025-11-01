@@ -1,16 +1,50 @@
-import { getUserCourses, mockSubmissions } from "@/lib/mock-data"
 import { User } from "@/app/context/userContext"
 import { Calendar, TrendingUp, Users, BookOpen, FileText, Plus, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
+import { useEffect, useState } from "react"
+import { toast } from "react-toastify"
 
 export default function TeacherDashboard({user}: {user: User}) {
-  const courses = getUserCourses(user.id, "teacher")
-  const allSubmissions = mockSubmissions.slice(0, 5)
-  const totalStudents = courses.reduce((sum, course) => sum + course.studentCount, 0)
-  const weeklySubmissions = mockSubmissions.length
+  const [courses, setCourses] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsFetching(true);
+        const [res1, res2, res3] = await Promise.all([
+          fetch("/api/courses"),
+          fetch("/api/submissions"),
+          fetch("/api/assignments"),
+        ]);
+
+        const [data1, data2, data3] = await Promise.all([
+          res1.json(),
+          res2.json(),
+          res3.json(),
+        ]);
+        setCourses(data1.data);
+        setSubmissions(data2.data);
+        setAssignments(data3.data || []);
+        setTotalStudents(data1.data[0]?.studentCount || 0);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load dashboard data.");
+      } finally {
+        setIsFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (isFetching) {
+    return <div className="p-6">Loading...</div>;
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
@@ -35,7 +69,7 @@ export default function TeacherDashboard({user}: {user: User}) {
                   </div>
                   <div className="flex items-center space-x-2 text-purple-600">
                     <TrendingUp className="h-4 w-4" />
-                    <span>{weeklySubmissions} submissions this week</span>
+                    <span>{submissions.length} submissions this week</span>
                   </div>
                 </div>
               </div>
@@ -53,8 +87,8 @@ export default function TeacherDashboard({user}: {user: User}) {
           {[
             { icon: BookOpen, label: "Active Courses", value: courses.length, color: "from-blue-500 to-blue-600" },
             { icon: Users, label: "Total Students", value: totalStudents, color: "from-emerald-500 to-green-600" },
-            { icon: TrendingUp, label: "This Week", value: weeklySubmissions, color: "from-purple-500 to-indigo-600" },
-            { icon: FileText, label: "Assignments", value: 12, color: "from-amber-500 to-orange-600" },
+            { icon: TrendingUp, label: "This Week", value: submissions.length, color: "from-purple-500 to-indigo-600" },
+            { icon: FileText, label: "Assignments", value: assignments.length, color: "from-amber-500 to-orange-600" },
           ].map((stat, index) => (
             <div key={index} className="group">
               <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 hover:-translate-y-1">
@@ -131,7 +165,7 @@ export default function TeacherDashboard({user}: {user: User}) {
               </Link>
             </div>
             <div className="space-y-4">
-              {allSubmissions.map((submission) => (
+              {submissions.map((submission) => (
                 <div
                   key={submission.id}
                   className="bg-white rounded-xl border border-slate-200/60 p-4 hover:shadow-md hover:shadow-slate-200/50 transition-all duration-300"

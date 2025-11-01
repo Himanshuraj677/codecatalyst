@@ -1,14 +1,44 @@
 import { User } from "@/app/context/userContext";
-import { getUserCourses, getDueAssignments, getUserSubmissions } from "@/lib/mock-data";
 import { Calendar, Target, Award, BookOpen, Clock, CheckCircle, FileText, ArrowRight, Users } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function StudentDashboard({user}: {user: User}) {
-  const courses = getUserCourses(user!.id, "student")
-  const dueAssignments = getDueAssignments(user!.id)
-  const recentSubmissions = getUserSubmissions(user!.id).slice(0, 3)
+  const [isFetching, setIsFetching] =  useState(false);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [dueAssignments, setDueAssignments] = useState<any[]>([]);
+  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Simulate data fetching delay
+    const fetchData = async () => {  
+      try {
+        setIsFetching(true);
+        const [res1, res2, res3] = await Promise.all([
+          fetch(`/api/courses`),
+          fetch(`/api/assignments`),
+          fetch(`/api/submissions`)
+        ]);
+        const [coursesData, assignmentsData, submissionsData] = await Promise.all([
+          res1.json(),
+          res2.json(),
+          res3.json()
+        ]);
+        setCourses(coursesData.data);
+        setDueAssignments(assignmentsData.data.slice(0, 4));
+        setRecentSubmissions(submissionsData.data.slice(0, 3));
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        toast.error("Failed to load dashboard data.");
+      } finally {
+        setIsFetching(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
