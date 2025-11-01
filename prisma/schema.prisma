@@ -129,7 +129,7 @@ model Enrollment {
   studentId String
   courseId  String
   student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course    Course @relation(fields: [courseId], references: [id])
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, studentId])
 }
@@ -144,12 +144,12 @@ model Problem {
   memoryLimit               Int
   constraints               String[]
   categoryId                String
-  category                  ProblemCategory     @relation(fields: [categoryId], references: [id])
+  category                  ProblemCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   createdById               String
   createdAt                 DateTime            @default(now())
   teacherSolution           String
   teacherSolutionLanguageId Int
-  createdBy                 User                @relation(fields: [createdById], references: [id])
+  createdBy                 User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
   assignment                AssignmentProblem[]
   submission                Submission[]
   testCases                 TestCase[]
@@ -177,7 +177,7 @@ model Assignment {
   maxAttempt  Int
   createdAt   DateTime @default(now())
 
-  course      Course              @relation(fields: [courseId], references: [id])
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
   problem     AssignmentProblem[]
   submissions Submission[]
 }
@@ -187,7 +187,7 @@ model AssignmentProblem {
   problemId    String
   assignmentId String
 
-  problem    Problem    @relation(fields: [problemId], references: [id])
+  problem    Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
   assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
 
   @@unique([problemId, assignmentId])

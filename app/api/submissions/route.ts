@@ -3,6 +3,8 @@ import { submitBatch, pollResults } from "@/lib/judge0";
 import { prisma } from "@/lib/db";
 import checkRoleBasedAccess from "@/lib/checkRoleAccess";
 import { SubmissionStatus } from "@prisma/client";
+import { handleApiError } from "@/lib/error-handler";
+import { getLanguageNameById } from "@/lib/languages";
 
 type RequestBody = {
   code: string;
@@ -181,3 +183,90 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const assignmentId = searchParams.get("assignmentId");
+    const courseId = searchParams.get("courseId");
+
+    const checkAccess = await checkRoleBasedAccess({ req });
+    if (!checkAccess.hasAccess || !checkAccess.user) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { role, id: userId } = checkAccess.user;
+    let submissions;
+
+    if (role === "teacher") {
+      // ✅ Get teacher's course IDs
+      const courses = await prisma.course.findMany({
+        where: { instructorId: userId },
+        select: { id: true },
+      });
+      const courseIds = courses.map((c) => c.id);
+
+      submissions = await prisma.submission.findMany({
+        where: {
+          ...(assignmentId
+            ? { assignmentId }
+            : courseId
+            ? { assignment: { courseId } }
+            : { assignment: { courseId: { in: courseIds } } }),
+        },
+        include: {
+          student: { select: { id: true, name: true, email: true } },
+          assignment: { select: { id: true, title: true, courseId: true } },
+          problem: { select: { id: true, title: true } },
+        },
+        orderBy: { submittedAt: "desc" },
+      });
+    } 
+    
+    else if (role === "user") {
+      submissions = await prisma.submission.findMany({
+        where: {
+          studentId: userId,
+          ...(assignmentId
+            ? { assignmentId }
+            : courseId
+            ? { assignment: { courseId } }
+            : {}),
+        },
+        include: {
+          assignment: { select: { id: true, title: true, courseId: true } },
+          problem: { select: { id: true, title: true } },
+          student: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { submittedAt: "desc" },
+      });
+    } 
+    
+    else {
+      return NextResponse.json({ success: false, message: "Invalid role" }, { status: 403 });
+    }
+    submissions = submissions.map(submission => {
+      const {problem, assignment, student, languageId, judge0Token, judge0Tokens, judge0Result, ...rest } = submission;
+      const language = getLanguageNameById(submission.languageId);
+      return {
+        ...rest,
+        problemTitle: problem.title,
+        assignmentId: assignment?.id || null,
+        assignmentTitle: assignment?.title || null,
+        language,
+        courseId: assignment?.courseId || null,
+        studentName: student.name,
+        studentEmail: student.email,
+      };
+
+    });
+    return NextResponse.json({
+      success: true,
+      data: submissions,
+      message: "Submissions fetched successfully",
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
+

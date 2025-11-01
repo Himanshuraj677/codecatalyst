@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,48 +16,69 @@ import { Search, Code, Calendar, FileText, User, Eye } from "lucide-react";
 import Link from "next/link";
 import { getUserSubmissions, mockSubmissions } from "@/lib/mock-data";
 import { useUser } from "@/hooks/useUser";
+import { sub } from "date-fns";
 
 export default function SubmissionsPage() {
-  const { user } = useUser();
+  const { user, isLoading } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isFetching, setIsFetching] = useState(false);
+  const [submissions, setSubmissions] = useState<any[]>([]);
 
   const isTeacher = user?.role === "teacher";
 
-  const submissions = useMemo(() => {
-    if (!user) return []; // guard for client runtime
-    return isTeacher ? mockSubmissions : getUserSubmissions(user.id);
-  }, [isTeacher, user]);
+  // const submissions = useMemo(() => {
+  //   if (!user) return []; // guard for client runtime
+  //   return isTeacher ? mockSubmissions : getUserSubmissions(user.id);
+  // }, [isTeacher, user]);
 
-  const filteredSubmissions = useMemo(() => {
-    return submissions.filter((submission) => {
-      const matchesSearch =
-        submission.assignmentTitle
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        (isTeacher &&
-          submission.studentName
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    const fetchSubmisision = async () => {
+      try {
+        setIsFetching(true);
+        const response = await fetch('/api/submissions');
+        const data = await response.json();
+        setSubmissions(data.data);
+      } catch (error) {
+        console.error("Error fetching submissions:", error);
+      } finally {
+        setIsFetching(false);
+      }
+    };
+    fetchSubmisision();
+  }, []);
 
-      const matchesStatus =
-        statusFilter === "all" || submission.status === statusFilter;
+  // const filteredSubmissions = useMemo(() => {
+  //   return submissions.filter((submission) => {
+  //     const matchesSearch =
+  //       submission.assignmentTitle
+  //         .toLowerCase()
+  //         .includes(searchTerm.toLowerCase()) ||
+  //       (isTeacher &&
+  //         submission.studentName
+  //           .toLowerCase()
+  //           .includes(searchTerm.toLowerCase()));
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [submissions, searchTerm, statusFilter, isTeacher]);
+  //     const matchesStatus =
+  //       statusFilter === "all" || submission.status === statusFilter;
+
+  //     return matchesSearch && matchesStatus;
+  //   });
+  // }, [submissions, searchTerm, statusFilter, isTeacher]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Accepted":
         return "bg-green-100 text-green-800";
-      case "Wrong Answer":
+      case "WrongAnswer":
         return "bg-red-100 text-red-800";
+      case "PartiallyCorrect":
+        return "bg-orange-100 text-orange-800";
       case "Pending":
         return "bg-yellow-100 text-yellow-800";
-      case "Time Limit Exceeded":
+      case "TimeLimitExceeded":
         return "bg-orange-100 text-orange-800";
-      case "Runtime Error":
+      case "RuntimeError":
         return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -83,8 +104,16 @@ export default function SubmissionsPage() {
     total: submissions.length,
     accepted: submissions.filter((s) => s.status === "Accepted").length,
     pending: submissions.filter((s) => s.status === "Pending").length,
-    rejected: submissions.filter((s) => s.status === "Wrong Answer").length,
+    rejected: submissions.filter((s) => s.status === "WrongAnswer" || s.status === "CompilationError" || s.status === "RuntimeError" || s.status === "TimeLimitExceeded" || s.status === "PartiallyCorrect").length,
   };
+
+  if (isLoading || isFetching) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        I am loading...
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -180,7 +209,7 @@ export default function SubmissionsPage() {
 
       {/* Submissions List */}
       <div className="space-y-4">
-        {filteredSubmissions.map((submission) => (
+        {submissions.map((submission) => (
           <Card
             key={submission.id}
             className="hover:shadow-md transition-shadow"
@@ -207,7 +236,7 @@ export default function SubmissionsPage() {
                     {isTeacher && (
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-1" />
-                        <span>{submission.studentName}</span>
+                        <span>{submission.studentName || "Unknown Student"}</span>
                       </div>
                     )}
                     <div className="flex items-center">
@@ -232,7 +261,7 @@ export default function SubmissionsPage() {
                         Feedback:
                       </p>
                       <p className="text-sm text-blue-800">
-                        {submission.feedback}
+                        {submission.feedback || "No feedback provided."}
                       </p>
                     </div>
                   )}
@@ -269,7 +298,7 @@ export default function SubmissionsPage() {
         ))}
       </div>
 
-      {filteredSubmissions.length === 0 && (
+      {submissions.length === 0 && (
         <div className="text-center py-12">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
